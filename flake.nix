@@ -1,8 +1,9 @@
 {
   description = "LaTeX Document Demo";
   inputs = {
-    nixpkgs.url = github:NixOS/nixpkgs/nixos-21.05;
-    flake-utils.url = github:numtide/flake-utils;
+    nixpkgs.url = github:NixOS/nixpkgs/nixos-24.05;
+    flake-utils.url = "github:numtide/flake-utils";
+
   };
   outputs = { self, nixpkgs, flake-utils }:
     with flake-utils.lib; eachSystem allSystems (system:
@@ -11,9 +12,22 @@
         tex = pkgs.texlive.combine {
           inherit (pkgs.texlive) scheme-medium todonotes latexmk pgf biber koma-script biblatex blindtext nicematrix fontspec;
         };
+        commonPackages = pkgs: with pkgs; [
+          z3
+          stack
+          pkgs.haskellPackages.ghcid
+        ];
       in
       rec {
+
+
+        devShell = pkgs.mkShell {
+          name = "latex-demo-shell";
+          buildInputs = commonPackages pkgs;
+        };
+
         packages = {
+
           document = pkgs.stdenvNoCC.mkDerivation rec {
             name = "latex-demo-document";
             src = self;
