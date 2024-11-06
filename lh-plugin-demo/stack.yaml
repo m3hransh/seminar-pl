@@ -20,4 +20,6 @@ extra-deps:
     commit: 5b39f1a3c49190f9e438f9cdefd7d2635c5bf7f2
 
 nix:
+  pure: true
+  enable: true
   packages: [cacert, git, hostname, z3]
