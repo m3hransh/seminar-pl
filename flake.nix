@@ -13,7 +13,6 @@
           inherit (pkgs.texlive) scheme-medium todonotes latexmk pgf biber koma-script biblatex blindtext nicematrix fontspec;
         };
         compilerVersion = "ghc981";
-        compiler = pkgs: pkgs.haskell.packages."${compilerVersion}";
         commonPackages = pkgs: with pkgs; [
           z3
           # haskell.packages."${compilerVersion}".stack
@@ -30,7 +29,7 @@
           name = "
           latex-demo-shell
           ";
-          buildInputs = commonPackages pkgs;
+          buildInputs = (commonPackages pkgs) ++ [ tex ];
         };
 
         packages = {
