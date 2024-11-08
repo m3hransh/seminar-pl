@@ -59,7 +59,7 @@
                 \@author
             \end{tabular}\par}%
             \vskip 1em%
-            {\scriptsize \itshape \textbf{Note:} This report is a compilation of publications related to some topic as a result of a student seminar.\\It does not claim to introduce original work and all sources should be properly cited.\par}
+            {}
             %\vskip 1em%
             \vspace*{.5cm}
         \end{center}%
