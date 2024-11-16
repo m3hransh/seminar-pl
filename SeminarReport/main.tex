@@ -88,46 +88,72 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{abstract}
-  This report gives a brief overview of Liquid Haskell, a tool that extends Haskell with refinement types. Refinement types are types that extends expressiveness of Haskell types systems by providing predicates that can verify
-  invarients of the program. This report explains briefly how SMT solvers leveraged by Liquid Haskell and how to use Liquid Haskell by providing some examples. Finally, we discuss the limitations of Liquid Haskell and compare it with other tools.
+  This report gives a brief overview of \textsc{LiquidHaskell}, a tool that extends Haskell with refinement types. Refinement types are types that extends expressiveness of Haskell types systems by providing predicates that can verify
+  invarients of the program. This report explains briefly how SMT solvers leveraged by \textsc{LiquidHaskell} and how to use \textsc{LiquidHaskell} by providing some examples. Finally, we discuss the limitations of \textsc{LiquidHaskell} and compare it with other tools.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Introduction}
 \label{sec:introduction}
+Programming verfication is an important step in software developments. It is the process of
+verifying that a program behaves as it expected. There has been a lot of research in this 
+area and many tools have been developed. 
+One of the tools that is used in Haskell programming language is \textsc{LiquidHaskell}. \textsc{LiquidHaskell} 
+(LH) extends Haskell with refinement types which are types that extend the expressiveness of Haskell.
+With refinement types, we can provide invariant that the program should satisfy. 
+
+In this report, after a short backgrouund on program verfication using SMT in section \ref{sec:background}, we will explain 
+how LH works and how it uses SMT solvers to 
+verify the program in section \ref{sec:lh}. Then in section \ref{sec:example} we will provide some examples how to use 
+LH to verify \todo{problem name}\textbf{problem name} problem. Finally in section \ref{sec:conclusions} we 
+discuss the limiations of LH and compare it with other tools.
 
 % E.~g.~ 
 % ``quoting'' is done by using two backticks and two single quotes
 
 \section{Background}
 \label{sec:background}
+\(\{x \mid \varphi(x)\}\)
 
+\subsection{Z3 SMT Solvers}
+\begin{figure}
+			\begin{center}
+				\fbox{\includegraphics[width=.9\linewidth]{SMT}}%
+				% fbox for "framed box"
+			\end{center}
+			\caption{%
+         Overall system architecture of Z3
+        \cite{nikolaj_bjorner_programming_nodate}
+			}
+			\label{fig:scholar} % NOTE: \label must appear after \caption
+\end{figure}
 \section{Working with LiquidHaskell}
+\label{sec:lh}
+\begin{description}
+  \item[Refinement Types] Refinement types are types that extend the expressiveness of Haskell types by providing predicates that can verify invariants of the program. 
+  \item[Predicate] Predicates are haskell expressions that evaluate to boolean.
+  \item[SMT Solvers] SMT solvers are used to check the satisfiability of the predicates. 
   
-  
+\begin{figure}
+\begin{lstlisting}[language=Haskell,numbers=left]
+{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
+
+{-@ type Pos = {v:Int | 0 < v} @-}
+
+{-@ incr :: Pos -> Pos @-} //*\label{srcline:typerefinement}
+incr :: Int -> Int
+incr x = x + 1 
+\end{lstlisting}
+\caption{A simple example of LiquidHaskell. in line \ref{srcline:typerefinement} we define the type refinement.}
+\label{alg:example}
+\end{figure}
+\end{description}
 \section{Example Application}
+\label{sec:example}
 
 \section{Conclusions, Results, Discussion}
 \label{sec:conclusions}
-
-% \begin{figure}
-% \begin{lstlisting}[language=Scala,numbers=left]
-% def sort[T](list: List[T])(implicit ord: Ordering[T]): List[T] = {
-%   list match {
-%     case Nil => Nil
-%     case x :: xs =>
-%       // partition list based on pivot element x
-%       val (lo, hi) = xs.partition(ord.lt(_, x))  //*\label{srcline:algcmp}
-%       sort(lo) ++ (x :: sort(hi))
-%   }
-% }
-% \end{lstlisting}
-% \caption{An example algorithm. Do you recognize it? Line~\ref{srcline:algcmp} is crucial!}
-% \label{alg:example}
-% \end{figure}
-
-\section{Bibliography}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
