@@ -15,6 +15,7 @@
         compilerVersion = "ghc981";
         commonPackages = pkgs: with pkgs; [
           z3
+          (python3.withPackages (ps: [ ps.z3-solver ]))
           # haskell.packages."${compilerVersion}".stack
           stack
           haskell.packages."${compilerVersion}".ghcid

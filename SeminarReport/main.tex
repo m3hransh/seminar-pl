@@ -88,8 +88,10 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{abstract}
-  This report gives a brief overview of \textsc{LiquidHaskell}, a tool that extends Haskell with refinement types. Refinement types are types that extends expressiveness of Haskell types systems by providing predicates that can verify
-  invarients of the program. This report explains briefly how SMT solvers leveraged by \textsc{LiquidHaskell} and how to use \textsc{LiquidHaskell} by providing some examples. Finally, we discuss the limitations of \textsc{LiquidHaskell} and compare it with other tools.
+  This report gives a brief overview of \textsc{LiquidHaskell}, a tool that extends Haskell with refinement types. 
+  Refinement types are types that extends expressiveness of Haskell types systems by providing predicates that can verify
+  invarients of the program. This report explains briefly how SMT solvers leveraged by \textsc{LiquidHaskell} and 
+  how to use \textsc{LiquidHaskell} by providing some examples. Finally, we discuss the limitations of \textsc{LiquidHaskell} and compare it with other tools.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -99,6 +101,18 @@
 Programming verfication is an important step in software developments. It is the process of
 verifying that a program behaves as it expected. There has been a lot of research in this 
 area and many tools have been developed. 
+Type safety is one of the important features of programming languages that helps to prevent runtime errors.
+Despite catching many errors at compile time, type systems are not powerful enough to catch all the errors.
+On the other , testing is another way to verify the program, but it is not always possible to test all the possible inputs.
+Consider the following example:
+
+\begin{figure}[h]
+\begin{lstlisting}[language=Haskell]
+  average    :: [Int] -> Int
+  average xs = sum xs `div` length xs
+\end{lstlisting}
+\end{figure}
+
 One of the tools that is used in Haskell programming language is \textsc{LiquidHaskell}. \textsc{LiquidHaskell} 
 (LH) extends Haskell with refinement types which are types that extend the expressiveness of Haskell.
 With refinement types, we can provide invariant that the program should satisfy. 
@@ -114,7 +128,34 @@ discuss the limiations of LH and compare it with other tools.
 
 \section{Background}
 \label{sec:background}
+\begin{description}
+  \item[Refinement Types] Refinement types are types that extend the expressiveness of Haskell types by providing predicates that can verify invariants of the program. 
+  \item[Predicate] Predicates are haskell expressions that evaluate to boolean.
+  \item[SMT Solvers] SMT solvers are used to check the satisfiability of the predicates. 
+  
+\end{description}
 \(\{x \mid \varphi(x)\}\)
+\subsection{SMT Solvers}
+SMT (Satisfiability Modulo Theories) solvers are tools that can check the satisfiability of logical formulas in a specific theory.
+SMT solvers extends the concept of SAT solvers by adding theories (e.g., the theory of equality, 
+of integer numbers, of real numbers, of arrays, of lists, and so on) to the boolean logic \cite{clarke_satisfiability_2018}.
+While SAT solvers can only check the satisfiability of boolean formulas, SMT solvers can check the satisfiability of formulas 
+that contain variables from different theories. 
+As an example, consider the following formula:
+
+\begin{equation}
+  \varphi = (x \lor y) \land (\lnot x \lor z)
+\end{equation}
+
+SAT solver can check the satisfiability of the formula \(\varphi\) by checking if there is an assignment for the variables \(x, y, z\).
+For instance, \(x = true, y = false, z = true\) is an assignment that makes \(\varphi\) \(true\). 
+
+On the other hand, SMT solvers can check the satisfiability of formulas that contain variables that required arithmetic theory as following formula:
+Figure \ref{fig:scholar}
+
+\begin{equation}
+  x + y \leq 10 \quad and \quad x = y - 7
+\end{equation}
 
 \subsection{Z3 SMT Solvers}
 \begin{figure}
@@ -130,12 +171,21 @@ discuss the limiations of LH and compare it with other tools.
 \end{figure}
 \section{Working with LiquidHaskell}
 \label{sec:lh}
-\begin{description}
-  \item[Refinement Types] Refinement types are types that extend the expressiveness of Haskell types by providing predicates that can verify invariants of the program. 
-  \item[Predicate] Predicates are haskell expressions that evaluate to boolean.
-  \item[SMT Solvers] SMT solvers are used to check the satisfiability of the predicates. 
-  
+\begin{lstlisting}[language=Haskell,numbers=left]
+p := (e r e)                -- binary relation
+   | (v e1 e2 ... en)       -- predicate (or alias) application
+   | (p && p)               -- and
+   | (p || p)               -- or
+   | (p => p) | (p ==> p)   -- implies
+   | (p <=> p)              -- iff
+   | (not p)                -- negation
+   | true | True
+   | false | False
+\end{lstlisting}
 \begin{figure}
+\caption{A simple example of LiquidHaskell. in line \ref{srcline:typerefinement} we define the type refinement.}
+\label{alg:example}
+\end{figure}
 \begin{lstlisting}[language=Haskell,numbers=left]
 {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
 
@@ -145,10 +195,6 @@ discuss the limiations of LH and compare it with other tools.
 incr :: Int -> Int
 incr x = x + 1 
 \end{lstlisting}
-\caption{A simple example of LiquidHaskell. in line \ref{srcline:typerefinement} we define the type refinement.}
-\label{alg:example}
-\end{figure}
-\end{description}
 \section{Example Application}
 \label{sec:example}
 
