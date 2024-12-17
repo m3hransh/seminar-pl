@@ -48,6 +48,13 @@
 % Defines default styling for code listings
 \definecolor{gray_ulisses}{gray}{0.55}
 \definecolor{green_ulises}{rgb}{0.2,0.75,0}
+\lstdefinelanguage{smtlib2} {
+  morekeywords={set-logic, declare-const, assert, check-sat, get-model},
+  sensitive=true,
+  morecomment=[l]{;},
+  morestring=[b]"
+}
+
 \lstset{%
   columns=flexible,
   keepspaces=true,
@@ -189,13 +196,146 @@ Figure \ref{fig:scholar}
 \end{equation}
 
 \subsection{Z3 SMT Solvers}
+\subsubsection*{Overall System Architecture of Z3}
+
+The overall system architecture of Z3 is designed to efficiently solve Satisfiability Modulo Theories (SMT) problems.
+ Here's a detailed breakdown of the key components and their interactions:
+
+\subsubsection{Interfaces to Z3}
+Z3 can be interacted with using SMT-LIB2 scripts supplied as text files or through a pipe. Additionally,
+high-level programming languages can make API calls to Z3, which are proxies for calls over a C-based API.
+The tutorial focuses on using the Python front-end for interfacing with Z3.
+
+\subsubsection{Logical Formulas}
+Z3 accepts logical formulas built from atomic variables and logical connectives, which can include symbols defined by various theories.
+These formulas use basic building blocks like Boolean variables, integers, and reals, combined with logical operators such as
+\texttt{And}, \texttt{Or}, \texttt{Not}, \texttt{Implies}, and \texttt{Xor}. Z3 handles complex logical expressions by
+integrating symbols from multiple theories, such as arrays and arithmetic, allowing it to model a wide range of problems.
+The formulas generally follow the SMT-LIB2 standard, ensuring interoperability between different SMT solvers. 
+This versatility makes Z3 a powerful tool for solving diverse logical problems efficiently.
+
+\subsubsection{Theories}
+Z3 supports multiple theories, including Equality and Uninterpreted Functions (EUF), Arithmetic (both linear and non-linear),
+Arrays, Bit-Vectors, Algebraic Datatypes, Sequences, and Strings. Each theory has specialized decision procedures for solving
+related formulas.
+
+\subsubsection{Solver}
+Z3 provides services for deciding the satisfiability of formulas. This includes handling incrementality, scopes, assumptions, 
+cores, models, and other methods like statistics, proofs, and retrieving solver state. Specialized solvers are included for 
+different types of problems
+
+\subsubsection*{SMT Solver}
+The SMT solver in Z3 is a general-purpose solver that integrates various theories to decide the satisfiability of logical formulas. 
+It uses the CDCL(T) architecture, which combines Conflict-Driven Clause Learning (CDCL) with theory solvers.
+
+\subsubsection*{Fixedpoint Solver}
+The Fixedpoint solver in Z3 is used for reasoning about recursive definitions and fixed-point computations. 
+It includes a Datalog engine and supports relational algebra and Property Directed Reachability (PDR) algorithms.
+
+\subsubsection*{NLSat Solver}
+The NLSat solver is specialized for non-linear arithmetic problems. 
+It uses a combination of algebraic methods and SAT solving techniques to handle polynomial constraints.
+
+\subsubsection*{SAT Solver}
+The SAT solver in Z3 is designed for propositional logic problems. It uses advanced techniques like in-processing 
+and co-processing to efficiently solve Boolean satisfiability problems.
+
+\subsubsection*{QSAT Solver}
+The QSAT solver handles quantified Boolean formulas (QBF). It extends the capabilities of the SAT solver to deal with quantifiers, 
+providing solutions for more complex logical problems.
+
+
+\subsubsection{Tactics}
+Tactics in Z3 are used for pre-processing, simplifying formulas, and creating sub-goals. 
+They are essential for breaking down complex problems into more manageable parts.
+
+\subsubsection*{Preprocessing}
+Preprocessing tactics simplify the input formulas before they are passed to the main solver. This can include techniques 
+like constant propagation, simplification of arithmetic expressions, and elimination of redundant constraints.
+
+\subsubsection*{Cube and Conquer}
+The Cube and Conquer tactic is used to partition the search space into smaller sub-problems (cubes) that can be solved independently. 
+This approach is particularly useful for parallel solving and can significantly reduce the overall solving time.
+
+\subsubsection*{tacticals}
+Tacticals are combinators that allow the composition of multiple tactics. Examples include:
+
+\begin{itemize}
+    \item \texttt{then}: Applies a sequence of tactics to the input goal.
+    \item \texttt{par-then}: Applies tactics in parallel to the input goal.
+    \item \texttt{or-else}: Applies the first tactic and, if it fails, applies the second tactic.
+    \item \texttt{repeat}: Repeatedly applies a tactic until no subgoal is modified.
+\end{itemize}
+
+The architecture of Z3 is designed to be flexible and powerful, supporting a wide range of logical theories and providing
+ robust solver services. It allows for efficient interaction through various interfaces and includes advanced features for
+  optimization and logical analysis.
+
+\subsubsection{Optimization}
+Z3 provides optimization services that allow users to solve satisfiability problems while maximizing or minimizing objective functions. 
+This is useful for problems that require finding the best solution under given constraints.
+
+\subsubsection{Advanced Features}
+Z3 includes specialized procedures for enumerating consequences (backbone literals), which are useful for certain types of logical analysis.
+
+
+The architecture of Z3 is designed to be flexible and powerful, 
+supporting a wide range of logical theories and providing robust solver services. It allows for efficient interaction through 
+various interfaces and includes advanced features for optimization and logical analysis.
+
+This LaTeX code will format the text with a section heading, a list of examples, and a concluding paragraph, making it clear 
+and well-structured.
+
+
+\begin{figure}[ht]
+  \begin{center}
+    \fbox{\includegraphics[width=.9\linewidth]{SMT}}%
+    % fbox for "framed box"
+  \end{center}
+  \caption{%
+     Overall system architecture of Z3
+    \cite{nikolaj_bjorner_programming_nodate}
+  }
+  \label{fig:scholar} % NOTE: \label must appear after \caption
+\end{figure}
 
 Consider following example:
 \begin{equation}
   \label{eq:example-sat}
   (Tie \lor Shirt) \land (\lnot Tie \lor Shirt) \land (\lnot Tie \lor \lnot Shirt)
 \end{equation}
-Formula \ref{eq:example-sat} can be solved by Z3 SMT solver as following code:
+
+Formula \ref{eq:example-sat} can be solved in SMTLIB2 as following code:
+
+\begin{figure}[ht]
+  \begin{lstlisting} [language=SMTlIB2]
+    (set-logic QF_UF)
+    (declare-const Tie Bool)
+    (declare-const Shirt Bool)
+    (assert (or Tie Shirt))
+    (assert (or (not Tie) Shirt))
+    (assert (or (not Tie) (not Shirt)))
+    (check-sat)
+    (get-model)
+  \end{lstlisting}
+  \end{figure}
+
+  This script will produce output of the code which is:
+
+
+\begin{lstlisting} [language=SMTlIB2]
+ sat
+ (model
+   (define-fun Tie () Bool false)
+   (define-fun Shirt () Bool true)
+ )
+\end{lstlisting}
+\vspace{1em}
+
+This SMT-LIB2 script sets up the problem, declares the variables, asserts the constraints, checks for satisfiability,
+  and retrieves the model, just like the Python code does with Z in the following example.
+
+  Formula \ref{eq:example-sat} can also be solved by Z3 SMT solver as following code:
 
 \begin{figure}[ht]
 \begin{lstlisting}[language=Python]
@@ -211,11 +351,12 @@ Formula \ref{eq:example-sat} can be solved by Z3 SMT solver as following code:
 \end{figure}
 The output of the code is:
 
-\begin{displayshellcommand}
+
+\begin{lstlisting}[language=Python]
 sat
 
 [Tie = False, Shirt = True]
-\end{displayshellcommand}
+\end{lstlisting}
 
 \begin{figure}[ht]
 \begin{lstlisting}[language=Python]
@@ -227,17 +368,7 @@ sat
   print(s.check(Not(fml)))
 \end{lstlisting}
 \end{figure}
-\begin{figure}
-			\begin{center}
-				\fbox{\includegraphics[width=.9\linewidth]{SMT}}%
-				% fbox for "framed box"
-			\end{center}
-			\caption{%
-         Overall system architecture of Z3
-        \cite{nikolaj_bjorner_programming_nodate}
-			}
-			\label{fig:scholar} % NOTE: \label must appear after \caption
-\end{figure}
+
 \section{Working with LiquidHaskell}
 \label{sec:lh}
 LH is a tool that extends Haskell with refinement types. Refinement types are types that extend the expressiveness of Haskell types systems by providing predicates that can verify invarients of the program. In this section, we will explain how to use LH and how it works.
