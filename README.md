@@ -1,27 +1,11 @@
-Liquid Haskell
+# Welcome to [Slidev](https://github.com/slidevjs/slidev)!
 
-This is a Seminar project for exploring Liquid Haskell, a program verifier for the programming language Haskell which allows specifying correctness properties by using refinement types.
+To start the slide show:
 
-This project consist of code examples in `lh-demo` and the Report in [SeminerReport](SeminarReport/main.pdf) 
+- `npm install`
+- `npm run dev`
+- visit <http://localhost:3030>
 
-## Table of Content
-- [Liquid Haskell](#liquidhaskell-lh)
-- [Report](#report)
-- [Installation](#installation)
-- [Usage](#usage)
-- [References](#references)
-- [License](#license)
-## LiquidHaskell (LH)
+Edit the [slides.md](./slides.md) to see the changes.
 
-## Report
-
-## Installation
-## Usage
-## References
-## License
-```
-MIT License
-see [LICENSE](LICENSE) file for details 
-``
-```
-```
+Learn more about Slidev at the [documentation](https://sli.dev/).
