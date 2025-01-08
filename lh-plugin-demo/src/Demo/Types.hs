@@ -4,6 +4,7 @@ module Demo.Types where
 
 {-@ type Zero = {z : Int | z == 0} @-}
 {-@ type Even = {z: Int | z mode 2 == 0} @-}
+{-@ type Nat = {n: Int | n > 0} @-}
 
 {-@ zero :: Zero @-}
 zero :: Int

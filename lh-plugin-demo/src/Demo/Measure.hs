@@ -1,6 +1,6 @@
 module Demo.Measure where
 
-import Prelude hiding (null)
+import Prelude hiding (head, null)
 
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple"        @-}
@@ -8,7 +8,7 @@ import Prelude hiding (null)
 {-@ type ListN a N = {v: [a] | size v = N} @-}
 {-@ type ListX a X = ListN a {size X}        @-}
 {-@ measure size @-}
-{-@ size :: xs: [a] -> {v: Nat | notEmpty xs => v > 0}  @-}
+{-@ size :: xs: [a] -> {v: Nat | notEmpty xs <=> v > 0}  @-}
 size :: [a] -> Int
 size [] = 0
 size (_ : rs) = 1 + size rs
@@ -67,12 +67,17 @@ average' xs
 -- size1 [] = 0
 -- size1 (_ : xs) = 1 + size1 xs
 
+{-@ head :: NEList a -> a @-}
+head :: [a] -> a
+head (x : _) = x
+
 safeHead :: [a] -> Maybe a
 safeHead xs
   | null xs = Nothing
   | otherwise = Just $ head xs
 
-{-@ null      :: xs :[a] -> Bool @-}
+{-@ measure null @-}
+{-@ null      :: xs :[a] -> {v: Bool | null xs == false => size xs > 0} @-}
 null [] = True
 null (_ : _) = False
 
