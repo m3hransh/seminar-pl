@@ -1,0 +1,29 @@
+
+@article{vazou_refinement_2018,
+	title = {Refinement reflection: complete verification with {SMT}},
+	volume = {2},
+	issn = {2475-1421},
+	url = {https://dl.acm.org/doi/10.1145/3158141},
+	doi = {10.1145/3158141},
+	shorttitle = {Refinement reflection},
+	abstract = {We introduce
+              Refinement Reflection
+              , a new framework for building {SMT}-based deductive verifiers. The key idea is to reflect the code implementing a user-defined function into the function’s (output) refinement type. As a consequence, at
+              uses
+              of the function, the function definition is instantiated in the {SMT} logic in a precise fashion that permits decidable verification. Reflection allows the user to write
+              equational proofs
+              of programs just by writing other programs using pattern-matching and recursion to perform case-splitting and induction. Thus, via the propositions-as-types principle, we show that reflection permits the
+              specification
+              of arbitrary functional correctness properties. Finally, we introduce a proof-search algorithm called
+              Proof by Logical Evaluation
+              that uses techniques from model checking and abstract interpretation, to completely automate equational reasoning. We have implemented reflection in Liquid Haskell and used it to verify that the widely used instances of the Monoid, Applicative, Functor, and Monad typeclasses actually satisfy key algebraic laws required to make the clients safe, and have used reflection to build the first library that actually verifies assumptions about associativity and ordering that are crucial for safe deterministic parallelism.},
+	pages = {1--31},
+	issue = {{POPL}},
+	journaltitle = {Proceedings of the {ACM} on Programming Languages},
+	shortjournal = {Proc. {ACM} Program. Lang.},
+	author = {Vazou, Niki and Tondwalkar, Anish and Choudhury, Vikraman and Scott, Ryan G. and Newton, Ryan R. and Wadler, Philip and Jhala, Ranjit},
+	urldate = {2024-12-15},
+	date = {2018-01},
+	langid = {english},
+	file = {PDF:/home/mehran/Zotero/storage/IPS2Q94J/Vazou et al. - 2018 - Refinement reflection complete verification with SMT.pdf:application/pdf},
+}

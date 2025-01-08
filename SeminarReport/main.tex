@@ -490,7 +490,92 @@ There are two ways to define a function in the refinement logic: reflection and 
  incr :: Int -> Int
  incr x = x + 1 
 \end{haskell}
+
+\subsection{Verification}
+
 \section{Example Application}
+
+In this section, we discuss the persistent stack data structure and how to verify its functional correctness using LiquidHaskell. Persistent data structures are immutable and support efficient access to previous versions. In this paper, we aim to prove the functional correctness of a persistent stack implementation, ensuring its operations satisfy the expected behavior.
+
+\section{Definition of the Persistent Stack}
+The stack is defined as a list-based data structure with two main operations: \texttt{push} and \texttt{pop}. Below is the Haskell implementation:
+
+\begin{lstlisting}[caption=Persistent Stack Implementation]
+{-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
+
+module PersistentStack where
+
+-- Define the Stack type
+data Stack a = Empty | Cons a (Stack a) deriving (Eq, Show)
+
+-- Push operation
+{-@ reflect push @-}
+push :: a -> Stack a -> Stack a
+push x s = Cons x s
+
+-- Pop operation
+{-@ reflect pop @-}
+pop :: Stack a -> Maybe (a, Stack a)
+pop Empty = Nothing
+pop (Cons x s) = Just (x, s)
+
+-- Top operation
+{-@ reflect top @-}
+top :: Stack a -> Maybe a
+top Empty = Nothing
+top (Cons x _) = Just x
+
+-- IsEmpty operation
+{-@ reflect isEmpty @-}
+isEmpty :: Stack a -> Bool
+isEmpty Empty = True
+isEmpty _     = False
+\end{lstlisting}
+
+\section{Specification}
+To prove the correctness of the \texttt{push} and \texttt{pop} operations, we define their specifications in LiquidHaskell.
+
+\subsection{Push Operation}
+The \texttt{push} operation adds an element to the stack. Its specification ensures that the new stack is not empty and that the top of the stack is the newly pushed element:
+
+\begin{lstlisting}[caption=Push Specification]
+{-@ pushSpec :: x:a -> s:Stack a 
+  -> { top (push x s) == Just x && not (isEmpty (push x s)) } @-}
+\end{lstlisting}
+
+\subsection{Pop Operation}
+The \texttt{pop} operation removes the top element from the stack. Its specification ensures that if the stack is non-empty, \texttt{pop} returns the correct element and the remainder of the stack:
+
+\begin{lstlisting}[caption=Pop Specification]
+{-@ popSpec :: s:Stack a -> { isEmpty s || case pop s of
+    Nothing -> True;
+    Just (x, s') -> top s == Just x && top (push x s') == Just x } @-}
+\end{lstlisting}
+
+\section{Proofs}
+Using LiquidHaskell, we can prove the above specifications. Here, we outline the proof strategies for the main operations:
+
+\subsection{Proof of Push Correctness}
+The correctness of \texttt{push} follows directly from its definition:
+
+\begin{align*}
+\text{pushSpec:} \quad & \text{Let } s = \text{Empty or Cons.} \\
+& \text{By definition of \texttt{push}, } \texttt{push x s} = \text{Cons } x s. \\
+& \text{Then } \texttt{top (push x s)} = \text{Just } x. \\
+& \text{Also, } \texttt{isEmpty (push x s)} = \text{False.}
+\end{align*}
+
+\subsection{Proof of Pop Correctness}
+The correctness of \texttt{pop} depends on the case analysis of the stack:
+
+\begin{itemize}
+  \item Case \texttt{s = Empty}: \texttt{pop s = Nothing}, satisfying the specification.
+  \item Case \texttt{s = Cons x s'}: \texttt{pop s = Just (x, s')}, ensuring \texttt{top s = Just x}.
+\end{itemize}
+
+\section{Conclusion}
+This paper demonstrates the use of LiquidHaskell to verify the functional correctness of a persistent stack. Future work includes extending this methodology to more complex data structures such as queues and deques.
 \label{sec:example}
 
 \section{Conclusions, Results, Discussion}
