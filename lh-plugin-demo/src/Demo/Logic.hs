@@ -29,4 +29,4 @@ boolToInt True = 1
 {-@ type Nat = {v : Int | v > 0 } @-}
 {-@ x :: Nat @-}
 x :: Int
-x = -1
+x = 1

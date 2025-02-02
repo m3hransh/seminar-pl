@@ -1,5 +1,5 @@
-{-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
-
+{-@ LIQUID "--reflection" @-}
+{-@ LIQUID "--ple" @-}
 module Demo.Tutorial where
 
 {-@ tail' :: xs: {v:[a] | 0 < len v} -> {v:[a] | len v == len xs - 1} @-}

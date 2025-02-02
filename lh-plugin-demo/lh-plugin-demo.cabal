@@ -18,9 +18,10 @@ library
       Demo.Types,
       Demo.Sorting,
       Demo.LazyQueue,
-      Demo.Tutorial
-      Demo.Measure
-      Demo.Proof
+      Demo.Tutorial,
+      Demo.Measure,
+      Demo.Proof,
+      Demo.Bag
   hs-source-dirs:
       src
   build-depends:

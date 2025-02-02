@@ -42,8 +42,6 @@ assoc (x : xs) ys zs =
       ++ (ys ++ zs)
       *** QED
 
--- {-@ LIQUID "--ple" @-}
-
 -- {-@ rightId' :: xs: [a] -> { v: () | xs ++ [] = xs } @-}
 -- rightId' :: [a] -> ()
 -- rightId' [] = ()
@@ -54,6 +52,7 @@ assoc (x : xs) ys zs =
 -- assoc' [] ys zs = ()
 -- assoc' (x : xs) ys zs = assoc' xs ys zs
 
+-- https://nikivazou.github.io/lh-course/Lecture_05_ProofsPrograms.html
 {-@ reflect fib @-}
 {-@ fib :: Nat -> Nat @-}
 fib :: Int -> Int
@@ -63,6 +62,37 @@ fib n = fib (n - 1) + fib (n - 2)
 
 {-@ fib2_1 :: {fib 2 = 1} @-}
 
-{-@ LIQUID "--ple" @-}
 fib2_1 :: ()
-fib2_1 = ()
+fib2_1 =
+  fib 2
+    === (fib 1 + fib 0 === 1)
+    *** QED
+
+{-@ fibThree :: () -> { fib 3 = 2 } @-}
+fibThree :: () -> Proof
+fibThree _ =
+  fib 3
+    === (fib 2 + fib 1)
+    *** QED
+
+{-@ fibUp :: n:Nat -> { fib n <= fib (n+1) } @-}
+fibUp :: Int -> Proof
+fibUp 0 =
+  fib 0
+    =<= fib 1
+    *** QED
+fibUp 1 =
+  fib 1
+    =<= fib 1
+    + fib 0
+      =<= fib 2
+      *** QED
+fibUp n =
+  fib n
+    === (fib (n - 1) + fib (n - 2))
+    ? fibUp (n - 1)
+    =<= (fib n + fib (n - 2))
+    ? fibUp (n - 2)
+    =<= (fib n + fib (n - 1))
+    =<= fib (n + 1)
+    *** QED
