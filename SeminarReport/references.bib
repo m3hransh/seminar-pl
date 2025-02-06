@@ -48,15 +48,6 @@
 	file = {PDF:/home/mehran/Zotero/storage/35GVUEX9/Jhala et al. - Programming With Refinement Types.pdf:application/pdf},
 }
 
-@misc{pd_magnus_forall_2023,
-	title = {forall x: {Calgary}},
-	url = {https://forallx.openlogicproject.org/html/},
-	urldate = {2024-11-13},
-	author = {{P.D. Magnus} and {Tim Button} and {Robert Trueman} and {Richard Zach}},
-	year = {2023},
-	file = {forall x\: Calgary:/home/mehran/Zotero/storage/MVX6GMVL/html.html:text/html},
-}
-
 @misc{nikolaj_bjorner_programming_nodate,
 	title = {Programming {Z3}},
 	url = {https://z3prover.github.io/papers/programmingz3.html},
@@ -110,4 +101,63 @@
 	date = {2018-01},
 	langid = {english},
 	file = {PDF:/home/mehran/Zotero/storage/IPS2Q94J/Vazou et al. - 2018 - Refinement reflection complete verification with SMT.pdf:application/pdf},
+}
+
+@misc{noauthor_ucsd-progsyslh-plugin-demo_2024,
+	title = {ucsd-progsys/lh-plugin-demo},
+	rights = {{BSD}-3-Clause},
+	url = {https://github.com/ucsd-progsys/lh-plugin-demo},
+	abstract = {A small package that demonstrates how to use {LiquidHaskell} as a {GHC} plugin},
+	publisher = {ucsd-progsys},
+	urldate = {2025-02-02},
+	date = {2024-10-26},
+	note = {original-date: 2020-06-24T23:10:49Z},
+}
+
+@article{vazou_refinement_2014,
+	title = {Refinement Types For Haskell},
+	volume = {49},
+	issn = {978-1-4503-2873-9},
+	doi = {10.1145/2628136.2628161},
+	abstract = {{SMT}-based checking of refinement types for call-by-value languages is a well-studied subject. Unfortunately, the classical translation of refinement types to verification conditions is unsound under lazy evaluation. When checking an expression, such systems implicitly assume that all the free variables in the expression are bound to values. This property is trivially guaranteed by eager, but does not hold under lazy, evaluation. Thus, to be sound and precise, a refinement type system for Haskell and the corresponding verification conditions must take into account which subset of binders actually reduces to values. We present a stratified type system that labels binders as potentially diverging or not, and that (circularly) uses refinement types to verify the labeling. We have implemented our system in {LIQUIDHASKELL} and present an experimental evaluation of our approach on more than 10,000 lines of widely used Haskell libraries. We show that {LIQUIDHASKELL} is able to prove 96\% of all recursive functions terminating, while requiring a modest 1.7 lines of termination-annotations per 100 lines of code.},
+	journal = {{ACM} {SIGPLAN} Notices},
+	shortjournal = {{ACM} {SIGPLAN} Notices},
+	author = {Vazou, Niki and Seidel, Eric and Jhala, Ranjit and Vytiniotis, Dimitrios and Peyton Jones, Simon},
+  year = {2014},
+	date = {2014-08-19},
+}
+
+@misc{niki_blog_2016,
+  author = {Vazou, Niki},
+	title = {{Haskell as a Theorem Prover} Blog},
+	url = {https://ucsd-progsys.github.io/liquidhaskell-blog/2016/09/18/refinement-reflection.lhs},
+	abstract = {{LiquidHaskell} Blog},
+	titleaddon = {{LiquidHaskell} Blog},
+	urldate = {2025-02-03},
+  year = {2016},
+}
+
+
+@article{wadler_propositions_2015,
+	title = {Propositions as types},
+	volume = {58},
+	issn = {0001-0782},
+	url = {https://dl.acm.org/doi/10.1145/2699407},
+	doi = {10.1145/2699407},
+	abstract = {Connecting mathematical logic and computation, it ensures that some aspects of programming are absolute.},
+	pages = {75--84},
+	number = {12},
+	journal= {Commun. {ACM}},
+	author = {Wadler, Philip},
+	urldate = {2025-02-03},
+	date = {2015-11-23},
+  year = {2015},
+	file = {Full Text PDF:/home/mehran/Zotero/storage/PHW6DIQS/Wadler - 2015 - Propositions as types.pdf:application/pdf},
+}
+
+@misc{niki_lecture_2024,
+  title = {{Programming with Refinement Types} Lecture},
+  author = {Vazou, Niki},
+  url = {https://nikivazou.github.io/lh-course},
+  date = {2024-03-15},
 }

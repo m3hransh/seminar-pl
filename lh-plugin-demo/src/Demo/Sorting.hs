@@ -22,7 +22,7 @@ bag (Cons x xs) = B.put x (bag xs)
 singelton :: (Ord a) => a -> B.Bag a
 singelton x = B.put x (B.empty)
 
-{-@ equalBag :: { bag(Cons 1 (Cons 2 Emp)) == Map_union (singelton 1) (bag( Cons 2 Emp)) } @-}
+{-@ equalBag :: { bag(Cons 1 (Cons 3 Emp)) ==  (bag( Cons 2 Emp)) } @-}
 equalBag = ()
 
 {-@ reflect isSorted @-}

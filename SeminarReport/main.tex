@@ -147,7 +147,7 @@ error if the list is empty. While this can be caught by testing, it is not alway
 Another way to verify the program is to use program verification tools. These tools use mathematical logic to check the program.
 One of such tools that is used in Haskell programming language is \textsc{LiquidHaskell}. \textsc{LiquidHaskell} 
 (LH) extends Haskell with refinement types which are types that extend the expressiveness of Haskell.
-With refinement types, we can provide invariant that the program should satisfy. 
+With refinement types, we can provide invariant that the program should satisfy \cite{jhala_programming_2020}. 
 
 In this report, after a short backgrouund on program verfication using SMT in section \ref{sec:background}, we will explain 
 how LH works and how it uses SMT solvers to 
@@ -158,22 +158,63 @@ discuss the limiations of LH and compare it with other tools.
 % E.~g.~ 
 % ``quoting'' is done by using two backticks and two single quotes
 
-\section{Background}
+\section{Overview}
 \label{sec:background}
-\begin{description}
-  \item[Refinement Types] Refinement types add predicates to the types \cite{jhala_programming_2020}. For example, consider the following type:
 
+\subsection{Type Systems and Program Verification}
+Programming verification ensures that software behaves as expected by using formal methods. 
+One common approach is type safety, which helps catch errors at compile time. 
+However, traditional type systems in functional languages like Haskell often lack expressiveness 
+to specify and enforce complex program properties statically \cite{jhala_programming_2020}. 
+While testing is another method for verification, 
+it is impractical to cover all possible inputs, especially in large-scale applications.
 
-    \begin{haskell}
-      {-@ incr :: Pos -> Pos @-}
-      incr :: Int -> Int
-      incr x = x + 1
-    \end{haskell}
+\subsection{Refinement Types}
+Refinement types extend conventional type systems by attaching logical predicates to types. 
+This allows for more precise specifications of program invariants. 
+For instance, in LiquidHaskell, a type annotation ensures that a function always receives a positive integer:
 
-  \item[Predicate] Predicates are haskell expressions that evaluate to boolean.
-  \item[SMT Solvers] SMT solvers are used to check the satisfiability of the predicates. 
-  
-\end{description}
+\begin{haskell}
+{-@ incr :: Pos -> Pos @-}
+incr :: Int -> Int
+incr x = x + 1
+\end{haskell}
+
+Here, \texttt{Pos} is a refinement type that guarantees the argument and result are strictly positive integers. 
+Unlike standard type systems, refinement types leverage logical constraints to statically verify program correctness 
+\cite{vazou_refinement_2014}.
+
+\subsection{SMT Solvers}
+Satisfiability Modulo Theories (SMT) solvers extend SAT solvers by incorporating various 
+mathematical theories (e.g., arithmetic, arrays, lists). These solvers determine the 
+satisfiability of logical formulas with complex constraints \cite{clarke_satisfiability_2018}. 
+A common SMT solver used in verification is Z3, which supports multiple theories and decision procedures.
+
+For example, given the constraints:
+
+\begin{equation}
+x + y \leq 10 \quad \text{and} \quad x = y - 7
+\end{equation}
+
+An SMT solver can determine whether a valid assignment exists for \(x\) and \(y\).
+
+\subsection{LiquidHaskell and SMT}
+LiquidHaskell integrates refinement types with SMT solvers to perform automated verification. 
+It encodes refinement predicates as logical formulas and delegates their satisfiability checking to an SMT solver like Z3 
+\cite{vazou_refinement_2014}. 
+
+For example, a refined list function can ensure non-empty lists:
+
+\begin{haskell}
+{-@ tail :: {v:[a] | 0 < len v} -> a @-}
+tail :: [a] -> a
+tail (x:_) = x
+\end{haskell}
+
+This ensures that \texttt{tail} is only applied to non-empty lists, preventing runtime errors. 
+The SMT solver checks that all function applications adhere to their specifications, 
+making LiquidHaskell a powerful tool for static verification.
+
 \subsection{SMT Solvers}
 SMT (Satisfiability Modulo Theories) solvers are tools that can check the satisfiability of logical formulas in a specific theory.
 SMT solvers extends the concept of SAT solvers by adding theories (e.g., the theory of equality, 
@@ -190,7 +231,6 @@ SAT solver can check the satisfiability of the formula \(\varphi\) by checking i
 For instance, \(x = true, y = false, z = true\) is an assignment that makes \(\varphi\) \(true\). 
 
 On the other hand, SMT solvers can check the satisfiability of formulas that contain variables that required arithmetic theory as following formula:
-Figure \ref{fig:scholar}
 
 \begin{equation}
   x + y \leq 10 \quad and \quad x = y - 7
@@ -215,8 +255,7 @@ The overall system architecture of Z3 is aimed at eﬃciently solving Satisfiabi
 \subsubsection{Interfaces to Z3}
 Z3 can be interacted with using SMT-LIB2 scripts supplied as text ﬁles or through a pipe.
 Besides this, high-level programming languages can make API calls to Z3, which are proxies
-for calls over a C-based API.
-\cite{nikolaj_bjorner_programming_nodate}
+for calls over a C-based API \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection{Logical Formulas}
 Z3 accepts logical formulas built from atomic variables and logical connectives, which can include symbols defined by various theories.
@@ -224,55 +263,46 @@ These formulas use basic building blocks like Boolean variables, integers, and r
 \texttt{And}, \texttt{Or}, \texttt{Not}, \texttt{Implies}, and \texttt{Xor}. Z3 handles complex logical expressions by
 integrating symbols from multiple theories, such as arrays and arithmetic, allowing it to model a wide range of problems.
 The formulas generally follow the SMT-LIB2 standard, ensuring interoperability between different SMT solvers. 
-This versatility makes Z3 a powerful tool for solving diverse logical problems efficiently.
-\cite{nikolaj_bjorner_programming_nodate}
+This versatility makes Z3 a powerful tool for solving diverse logical problems efficiently \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection{Theories}
 Z3 supports multiple theories, including Equality and Uninterpreted Functions (EUF), Arithmetic (both linear and non-linear),
 Arrays, Bit-Vectors, Algebraic Datatypes, Sequences, and Strings. Each theory has specialized decision procedures for solving
-related formulas.
-\cite{nikolaj_bjorner_programming_nodate}
+related formulas \cite{nikolaj_bjorner_programming_nodate}.
+
 
 \subsubsection{Solver}
 Z3 provides services for deciding the satisfiability of formulas. This includes handling incrementality, scopes, assumptions, 
 cores, models, and other methods like statistics, proofs, and retrieving solver state. Specialized solvers are included for 
-different types of problems.
-\cite{nikolaj_bjorner_programming_nodate}
+different types of problems \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection*{SMT Solver}
 The SMT solver in Z3 is a general-purpose solver that integrates various theories to decide the satisfiability of logical formulas. 
-It uses the CDCL(T) architecture, which combines Conflict-Driven Clause Learning (CDCL) with theory solvers.
-\cite{nikolaj_bjorner_programming_nodate}
+It uses the CDCL(T) architecture, which combines Conflict-Driven Clause Learning (CDCL) with theory solvers \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection*{Fixedpoint Solver}
 The Fixedpoint solver in Z3 is used for reasoning about recursive definitions and fixed-point computations. 
-It includes a Datalog engine and supports relational algebra and Property Directed Reachability (PDR) algorithms.
-\cite{nikolaj_bjorner_programming_nodate} 
+It includes a Datalog engine and supports relational algebra and Property Directed Reachability (PDR) algorithms \cite{nikolaj_bjorner_programming_nodate} 
 
 \subsubsection*{NLSat Solver}
 The NLSat solver is specialized for non-linear arithmetic problems. 
-It uses a combination of algebraic methods and SAT solving techniques to handle polynomial constraints.
-\cite{nikolaj_bjorner_programming_nodate}
+It uses a combination of algebraic methods and SAT solving techniques to handle polynomial constraints \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection*{SAT Solver}
 The SAT solver in Z3 is designed for propositional logic problems. It uses advanced techniques like in-processing 
-and co-processing to efficiently solve Boolean satisfiability problems.
-\cite{nikolaj_bjorner_programming_nodate}
+and co-processing to efficiently solve Boolean satisfiability problems \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection*{QSAT Solver}
 The QSAT solver handles quantified Boolean formulas (QBF). It extends the capabilities of the SAT solver to deal with quantifiers, 
-providing solutions for more complex logical problems.
-\cite{nikolaj_bjorner_programming_nodate}
+providing solutions for more complex logical problems \cite{nikolaj_bjorner_programming_nodate}.
 
 
 \subsubsection{Tactics}
 Tactics in Z3 are used for preprocessing, formula simplification, and the generation of sub-goals. they
 are essential to decompose complex problems into relatively simple fragments. The preprocess tactics simplify the input formulae before they are fed into the main solver. It can include heuristics such as the propagation of constants, arithmetic simplification, and removal of redundant constraints. The Cube and Conquer tactic is used to split the search space into smaller sub-problems. (cubes) that can be solved independently. This is a very useful scheme for parallel solving
-and the sum time required to solve, it greatly shortens. Tacticals are combiners which make composition of multiple tactics.
-\cite{nikolaj_bjorner_programming_nodate}
+and the sum time required to solve, it greatly shortens. Tacticals are combiners which make composition of multiple tactics \cite{nikolaj_bjorner_programming_nodate}.
 \subsubsection{Optimization}
-Z3 allows the use of optimization services along with user-defined problems in order to study the satisfiability of the problem while maximizing or minimizing objective functions. This applies to those problems which require solutions that are to be optimized under given constraints.
-\cite{nikolaj_bjorner_programming_nodate}
+Z3 allows the use of optimization services along with user-defined problems in order to study the satisfiability of the problem while maximizing or minimizing objective functions. This applies to those problems which require solutions that are to be optimized under given constraints \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection{Applications and Example of Z3}
 Software analysis verification and symbolic execution along with software analysis verification rely heavily on making use of the Z3 platform. Z3 operates through SMT-LIB2 scripts for textual logical problem inputs as well as program application interfaces using Python fundamental sources and C++ constructs and OCaml programming code. Both Z3 users prefer the Python API because of its straightforward nature and SMT-LIB2 stands out for presenting logical problems with predefined logics including arithmetic, arrays and bit-vectors.
@@ -390,8 +420,10 @@ This example illustrates Z3's theory combination mechanism, which:
 This capability makes Z3 particularly useful for software verification, as real-world programs inherently integrate these concepts \cite{nikolaj_bjorner_programming_nodate}.
 \section{Working with LiquidHaskell}
 \label{sec:lh}
-LH is a tool that extends Haskell with refinement types. Refinement types are types that extend the expressiveness of Haskell types systems by providing predicates that can verify invarients of the program. In this section, we will explain how to use LH and how it works.
-LH is available as a GHC plugin. To use LH, you need to add LH dependecy to the cabal file as following:
+LH is a tool that extends Haskell with refinement types. Refinement types are types that extend 
+the expressiveness of Haskell types systems by providing predicates that can verify invarients of the program \cite{vazou_refinement_2014}.
+In this section, we will explain how to use LH and how it works.
+LH is available as a GHC plugin. To use it, you need to add its dependecies to the cabal file as following \cite{noauthor_ucsd-progsyslh-plugin-demo_2024}:
 
 \vspace{1em}
 \begin{lstlisting}
@@ -413,15 +445,19 @@ LH is available as a GHC plugin. To use LH, you need to add LH dependecy to the 
 \end{lstlisting}
 \vspace{1em}
 
-By adding this dependency, LH can now check your program at compile time or via code linter in your IDE of choice. In following sections, we will explain how to use LH to verify the program.
+By adding this dependency, LH can now check your program at compile time or via code linter in your IDE of choice.
+In following sections, we will explain how to use LH to verify the program.
 \subsection{Type Refinement}
-Refinement types allows to constrain the type of the variables by adding predicates to the types \cite{jhala_programming_2020}. For example we can define natural numbers as following:
+Refinement types allows to constrain the type of the variables by adding predicates to the types 
+\cite{jhala_programming_2020}. For example we can define natural numbers as following:
 
 \begin{haskell}
  {-@ type Nat = {v:Int | 0 <= v} @-}
 \end{haskell}
 
-Now if you configure your IDE to use Haskell LSP, it will show following error if you try to assign a negative number to a variable of type Nat.
+Now if you configure your IDE to use Haskell LSP, it will show following error if you try to assign a negative number
+to a variable of type Nat.
+
 \begin{haskell}
  {-@ x :: Nat @-}
  x = -1
@@ -436,6 +472,7 @@ Now if you configure your IDE to use Haskell LSP, it will show following error i
    .
    Constraint id 2
 \end{haskell}
+
 The error message shows that the inferred type of the variable x is not a subtype of the required type.
 
 Using refinement types, one can define pre-conditions and post-conditions of the functions\cite{jhala_programming_2020}. 
@@ -473,9 +510,10 @@ To allow LH consider the above example as safe, we need to also specify post-con
  tail :: [a] -> [a]
  tail (x:_) = x
 \end{haskell}
+
 \subsection{Refined Data Types}
 In the above examples, we saw how refinements of input and output of fucntion allows us to have stronger arguments about our program. 
-We can take this further by refining the data types. Consider the following example:
+We can take this further by refining the data types. Consider the following example \cite{jhala_programming_2020}:
 
 \begin{haskell}
   data Slist a = Slist { size :: Int, elems :: [a] }
@@ -483,18 +521,19 @@ We can take this further by refining the data types. Consider the following exam
   {-@ data Slist a = Slist { size :: Nat, elems :: {v:[a] | len v == size} } @-}
 \end{haskell}
 
-In the above example, we introduced a new data type \textit{Slist} which is a list with a size. 
-We also added a refinement to the data type that ensures that the size of the list is equal to the length of the list. 
+This refined \textit{Slist} data type ensures the stoed `size` always matches the length of the `elems` list, 
+as formalized in the refinement annotation \cite{jhala_programming_2020} . 
 This ensures that the size of the list is always correct.
 
-The only thing in above example that is missing is the definition of \textit{len}. Fortunately, this function has already reflected by
+The only thing that is missing is the definition of \textit{len}. Fortunately, this function has already reflected by
 LH. In the following section, we show how can we use reflection or measure directives to define and execute any user defined haskell function in the refinement logic and
 reason about them.
 
 \subsection{Lifting Functions to the Refinement Logic}
 When our programs become more complex, we need to define our own functions in the refinement logic and reason about
-a function within another function. In LH, we can define our own functions in the refinement logic using reflection.
-There are two ways to define a function in the refinement logic: \texttt{reflection} and \texttt{measure}. 
+a function within another function. Refinement Reflection allows deep specification and verification by 
+reflecting the code implementing a Haskell function into the function’s output refinement type \cite{niki_blog_2016}.
+There are two ways to define and reason about a function in the refinement logic: \texttt{reflection} and \texttt{measure}. 
 
 \texttt{Measure} can be used on a function with one argument that is pattern matched in the function body. Then, the
 LH copies the function to the refinement logic, adds a refinement type to the constructor of the function's argument, and emits inferred global
@@ -509,28 +548,110 @@ bag Emp = B.empty
 bag (Cons x xs) = B.put x (bag xs)
 \end{haskell}
 
+This code add bag refinement type to the List data type. The \texttt{measure} directive is used to define the \texttt{bag} function,
+which is then copied to the refinement logic. It means that now the type of list constructors would have:
+
 \begin{haskell}
- {-# OPTIONS_GHC -fplugin=LiquidHaskell #-}
-
- {-@ type Pos = {v:Int | 0 < v} @-}
-
- {-@ incr :: Pos -> Pos @-} //*\label{srcline:typerefinement}
- incr :: Int -> Int
- incr x = x + 1 
+Nil  :: {v:List a | bag v = B.empty}
+Cons :: x:a -> l:List a -> {v:List a | bag v = B.put x (bag l)}
 \end{haskell}
 
-\subsection{Verification}
+So then we can use the \texttt{bag} function in the refinement logic to reason about the program. 
+For instance, in following example, we can use the \texttt{bag} function to reason about the program:
 
+\begin{haskell}
+{-@ equalBagExample1 :: { bag(Cons 1 (Cons 3 Emp)) ==  bag( Cons 2 Emp) } @-}
+
+>>    VV : {v : () | v == GHC.Tuple.Prim.()}
+>>    .
+>>    is not a subtype of the required type
+>>      VV : {VV##2465 : () | bag (Cons 1 (Cons 3 Emp)) == bag (Cons 2 Emp)}
+\end{haskell}
+
+The $\{x = y\}$ is shorthand for $\{ v : () \mid x = y \}$, where $x$ and $y$ are expressions.
+Note that equality for bags is defined as the equality of the underlying maps that already have a built-in equality function.
+LH can reason about the equality of bags by using the equality of the underlying maps and issuing a type error if the bags are not equal.
+If we define multiple measures for the same data type the refinements ar conjoined together \cite{niki_lecture_2024}.
+
+
+
+Reflection is another useful feature that allows the user to define a function in the refinement logic, providing
+the SMT solver with the function's behavior \cite{vazou_refinement_2018}. 
+This has the advantage of allowing the user to define a function that is not pattern matched in the function body.
+Additionally, with the use of a library of combinators provided by the LH, we can leverage the existing programming constructs to 
+prove the correctness of the program and use the principle of propositions-as-types (known as Curry-Howard isomorphism)\cite{vazou_refinement_2018}\cite{wadler_propositions_2015}.
+
+\begin{haskell}
+{-@ infixr ++ @-}
+{-@ reflect ++ @-}
+
+{-@ (++) :: xs:[a] -> ys:[a] -> { zs:[a] | len zs == len xs + len ys } @-}
+(++) :: [a] -> [a] -> [a]
+[] ++ ys = ys
+(x : xs) ++ ys = x : (xs ++ ys)
+\end{haskell}
+
+The \texttt{++} function is defined in the refinement logic using the \texttt{reflect} directive.
+Now we can use the \texttt{++} function in the refinement logic to reason about the program.
+In the following subsection, we will show how to use LH to verify that \texttt{++} function is associative.
+
+\subsection{Verification}
+LH allows to structure proofs to follow the style of calculational or equational reasoning popularized in classic texts
+and implemented in proof assistants like Coq and Agda . LH is equiped with a family of equation combinators
+for logical operators in the theory QF-UFLIA \cite{vazou_refinement_2018}.
+In the following example, we show how to use LH to verify that the \texttt{++} function is associative:
+
+\begin{haskell}
+{-@ assoc :: xs:[a] -> ys:[a] -> zs:[a] 
+  -> { v: () | (xs ++ ys) ++ zs = xs ++ (ys ++ zs) } @-}
+assoc :: [a] -> [a] -> [a] -> ()
+assoc [] ys zs =
+  ([] ++ ys)
+    ++ zs
+    === ys
+    ++ zs
+    === []
+    ++ (ys ++ zs)
+    *** QED
+
+assoc (x : xs) ys zs =
+  ((x : xs) ++ ys)
+    ++ zs
+    ===  x : (xs ++ ys) ++ zs
+    === x
+    : ((xs ++ ys) ++ zs)
+      ? assoc xs ys zs
+      === (x : xs)
+      ++ (ys ++ zs)
+      *** QED
+\end{haskell}
+
+These combinators defines as following:
+\begin{haskell}
+  (===) :: x: a -> y: { a | x = y }  -> { v: a | v = x }
+  data QED = QED
+  (***) :: a -> QED -> ()
+\end{haskell}
+
+As you can see, some of the steps in the proof seem trivial if we are able to unfold the definition of the \texttt{++} function.
+For this purpose, LH provides \texttt{Proof by Logical Evaluation} (PLE) which allows us to unfold the definition of the function.
+The key idea in PLE is to mimic type-level computation within SMT-logics by representing the function in a guarded form and repeatedly unfolding function
+application terms by instantiating them with their definition corresponding to an enabled guard \cite{vazou_refinement_2018}.
 
 \section{Example Application}
 
-In this section, we discuss the insertion sort algorithm and how to verify its functional correctness using LiquidHaskell. Insertion sort is a simple sorting algorithm that builds the final sorted list one element at a time. Using LiquidHaskell, we aim to ensure that the sorted list is both ordered and a permutation of the input.
+In this section, we discuss the insertion sort algorithm and how to verify its functional correctness using LiquidHaskell.
+We take the intrinsic approach to leverage the refinement types so that we don't need to proof the correctness separately.
+Insertion sort is a simple sorting algorithm that builds the final sorted list one element at a time. 
+Using LiquidHaskell, we aim to ensure that the sorted list is both ordered and a permutation of the input.
 
 \subsection{Definition of Insertion Sort}
 
-Insertion sort is implemented in Haskell with two main components: the \texttt{insert} function, which places an element in its correct position in a sorted list, and the \texttt{insertSort} function, which recursively sorts the input list. Below is the Haskell implementation:
+Insertion sort is implemented in Haskell with two main components: 
+the \texttt{insert} function, which places an element in its correct position in a sorted list, 
+and the \texttt{insertSort} function, which recursively sorts the input list. Below is the Haskell implementation:
 
-\begin{lstlisting}[caption=Insertion Sort Implementation]
+\begin{haskell}
 {-@ LIQUID "--reflection" @-}
 {-@ LIQUID "--ple" @-}
 
@@ -552,7 +673,7 @@ insert x (Cons y ys)
 insertSort :: (Ord a) => List a -> List a
 insertSort Emp = Emp
 insertSort (Cons x xs) = insert x (insertSort xs)
-\end{lstlisting}
+\end{haskell}
 
 \subsection{Specification}
 
@@ -564,7 +685,7 @@ To verify the correctness of the insertion sort, we define specifications that e
 
 We define a helper function, \texttt{isSorted}, to check whether a list is sorted:
 
-\begin{lstlisting}[caption=Sortedness Helper Function]
+\begin{haskell}
 {-@ reflect isSorted @-}
 isSorted :: (Ord a) => List a -> Bool
 isSorted Emp = True
@@ -572,7 +693,7 @@ isSorted (Cons x xs) =
   isSorted xs && case xs of
     Emp        -> True
     Cons x1 _  -> x <= x1
-\end{lstlisting}
+\end{haskell}
 
 The \texttt{isSorted} function is then used to specify and verify the correctness of the \texttt{insert} and \texttt{insertSort} functions.
 
@@ -580,54 +701,126 @@ The \texttt{isSorted} function is then used to specify and verify the correctnes
 
 The \texttt{insert} function places an element into a sorted list while maintaining its sortedness:
 
-\begin{lstlisting}[caption=Insert Specification]
+\begin{haskell}
 {-@ insert :: x:_ -> {xs:_ | isSorted xs} -> {ys:_ | isSorted ys} @-}
-\end{lstlisting}
+\end{haskell}
 
 \subsubsection{Insertion Sort Specification}
 
 The \texttt{insertSort} function ensures that the output is sorted and is a permutation of the input:
 
-\begin{lstlisting}[caption=Insertion Sort Specification]
+\begin{haskell}
 {-@ insertSort :: xs:_ -> {ys:_ | isSorted ys && bag xs == bag ys} @-}
-\end{lstlisting}
+\end{haskell}
 
 Here, \texttt{bag} represents a multiset of elements, used to verify that the output is a permutation of the input.
 
 \subsection{Proofs}
+By incorporating the specifications into the insertion sort implementation, we can verify the correctness of the algorithm.
+Once we define the specification, we will realize that we need to prove the correctness of the \texttt{insert} function.
+As the specification is not enough for the LH to verify the correctness of the \texttt{insert} function, we need to prove the following lemma:
 
-We outline proof strategies for the correctness of the \texttt{insert} and \texttt{insertSort} functions using LiquidHaskell.
-
-\subsubsection{Proof of Insert Correctness}
-
-The correctness of \texttt{insert} follows from its definition. We additionally define a lemma to assist in the proof:
-
-\begin{lstlisting}[caption=Insert Lemma]
+\begin{haskell}
 {-@ lem_ins :: y:_ -> {x:_ | y < x} -> {ys:_ | isSorted (Cons y ys)} 
     -> {isSorted (Cons y (insert x ys))} @-}
 lem_ins :: (Ord a) => a -> a -> List a -> Bool
 lem_ins y x Emp = True
 lem_ins y x (Cons y1 ys) = if y1 < x then lem_ins y1 x ys else True
-\end{lstlisting}
+\end{haskell}
+
+This lemma ensures that the \texttt{insert} function maintains the sortedness property.
+Then with the use of \texttt{withProof}, we can use the lemma to prove the correctness of the \texttt{insert} function:
+
+\begin{haskell}
+{-@ reflect insert @-}
+{-@ insert :: x:_ -> {xs:_ | isSorted xs} 
+  -> {ys:_ | isSorted ys && Map_union (singelton x) (bag xs) == bag ys  } @-}
+insert :: (Ord a) => a -> List a -> List a
+insert x Emp = Cons x Emp
+insert x (Cons y ys)
+  | x <= y = Cons x (Cons y ys)
+  | otherwise = Cons y (insert x ys) `withProof` lem_ins y x ys
+\end{haskell}
 
 \subsubsection{Proof of Insertion Sort Correctness}
 
-The correctness of \texttt{insertSort} is established by combining the correctness of \texttt{insert} and ensuring that the output satisfies both the sortedness and permutation properties.
+The correctness of \texttt{insertSort} is established by combining the correctness of \texttt{insert} and ensuring that the output satisfies 
+both the sortedness and permutation properties.
 
-\begin{lstlisting}[caption=Insertion Sort Proof]
+\begin{haskell}
 {-@ insertSort :: xs:_ -> {ys:_ | isSorted ys && bag xs == bag ys} @-}
 insertSort :: (Ord a) => List a -> List a
 insertSort Emp = Emp
 insertSort (Cons x xs) = insert x (insertSort xs)
-\end{lstlisting}
+\end{haskell}
 
 By verifying these properties using LiquidHaskell, we ensure that the implementation of insertion sort is functionally correct and adheres to the desired specifications.
 
-\section{Conclusion}
-This paper demonstrates the use of LiquidHaskell to verify the functional correctness of a persistent stack. Future work includes extending this methodology to more complex data structures such as queues and deques.
+\subsection{Conclusion}
+To summarize, we use the proposition-as-types principle to leverage LiquidHaskell for program verification.
+Haskell's expressive type system, combined with LiquidHaskell's refinement types, allows for precise specification of program invariants.
 \label{sec:example}
 
 \section{Conclusions, Results, Discussion}
+\textbf{Liquid Haskell}, enhanced with \textbf{Refinement Reflection} and \textbf{Proof by Logical Evaluation (PLE)}, 
+is a verification system that aims to combine the strengths of \textbf{SMT-based} and 
+\textbf{Type Theory (TT)-based} approaches. It allows programmers to verify program correctness 
+by leveraging a combination of refinement types, code reflection, and automated proof search \cite{vazou_refinement_2018}.
+
+\subsection*{Core Concepts}
+
+\begin{itemize}
+    \item \textbf{Refinement Types}: Liquid Haskell uses refinement types to specify program properties, 
+        extending basic types with logical predicates drawn from an SMT-decidable logic.
+    \item \textbf{Refinement Reflection}: The implementation of a user-defined function is reflected into 
+      its output refinement type. This converts the function's type signature into a precise description of the function's behavior 
+      . At uses of the function, the definition is instantiated in the SMT logic \cite{vazou_refinement_2018}.
+   \item \textbf{Propositions as Types}: Proofs are written as regular Haskell programs, 
+     utilizing the Curry-Howard isomorphism. This allows programmers to use language mechanisms 
+     like branching, recursion, and auxiliary functions to construct proofs \cite{vazou_refinement_2018}.
+   \item \textbf{Proof by Logical Evaluation (PLE)}: PLE is a proof-search algorithm that automates 
+     equational reasoning. It mimics type-level computation within SMT-logics by representing 
+     functions in a guarded form and repeatedly unfolding function application terms by instantiating them 
+     with their definition corresponding to an enabled guard \cite{vazou_refinement_2018}.
+\end{itemize}
+
+\subsection*{Comparison with Type Theory (TT) Based Systems (e.g., Agda)}
+
+\begin{itemize}
+    \item \textbf{Type-Level Computation}: TT-based provers use type-level computation (normalization) 
+      for reasoning about user-defined functions, often requiring explicit lemmas or rewrite hints.
+    \item \textbf{Automation}: Liquid Haskell uses PLE to automate equational reasoning 
+      without explicit lemmas, by emulating type-level computation within SMT logic. 
+     \item  \textbf{Proof Style}: Proofs in Liquid Haskell are written as Haskell programs.
+    \item  \textbf{SMT Integration}: Liquid Haskell uses SMT solvers for decidable theories, 
+        while TT-based systems often require users to handle these proofs manually [5, 9].
+    \item \textbf{Expressiveness}: Both systems can express sophisticated proofs. Liquid Haskell is shown 
+      to be able to express any natural deduction proof \cite{vazou_refinement_2018}.
+   \item \textbf{Practicality}: Liquid Haskell reuses an existing language and its ecosystem, 
+     allowing proofs and programs to be written in the same language. 
+\end{itemize}
+
+\subsection*{Comparison with Other SMT-Based Verifiers (e.g., Dafny)}
+\begin{itemize}
+    \item \textbf{Axiomatization}: Existing SMT-based verifiers such as Dafny use axioms to encode user defined functions 
+        which can lead to incomplete verification and matching loops. Liquid Haskell, uses refinement 
+        reflection to encode functions, along with PLE for complete and terminating verification \cite{vazou_refinement_2018}.
+    \item \textbf{Fuel Parameter}: Dafny and F* use a fuel parameter to limit the instantiation of axioms which can lead 
+      to incompleteness \cite{vazou_refinement_2018}. PLE does not require any fuel parameter and is guaranteed to terminate.
+\end{itemize}
+
+\subsection*{Limitations}
+
+\begin{itemize}
+    \item \textbf{Debugging}: The increased automation can make it harder to debug failed proofs.
+    \item \textbf{Interactivity}: Liquid Haskell lacks strong interactivity, unlike theorem provers with tactics and scripts.
+    \item \textbf{Certificates}: It does not produce easily checkable certificates, unlike theorem provers \cite{vazou_refinement_2018}.
+    \item \textbf{Reflection Limitations}: Not all Haskell functions can be reflected into logic due to soundness or implementation constraints \cite{vazou_refinement_2018}.
+\end{itemize}
+
+\subsection*{Conclusion}
+
+Liquid Haskell combines refinement types, code reflection, and PLE to offer a practical approach to program verification within an existing language. By leveraging SMT solvers for decidable theories and PLE to automate equational reasoning, Liquid Haskell aims to simplify the process of verifying program correctness when compared to other tools.
 \label{sec:conclusions}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
