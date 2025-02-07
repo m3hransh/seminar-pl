@@ -120,8 +120,8 @@
 
 \begin{abstract}
   This report gives a brief overview of \texttt{LiquidHaskell}, a tool that extends Haskell with refinement types. 
-  Refinement types are types that extends the expressiveness of Haskell types systems by providing predicates that can verify
-  nvariants of the program. This report explains briefly how SMT solvers are leveraged by \texttt{LiquidHaskell} and 
+  Refinement types are types that extend the expressiveness of Haskell's type system by providing predicates that can verify invariants of the program. 
+  This report explains briefly how SMT solvers are leveraged by \texttt{LiquidHaskell} and 
   how to use them by providing some examples. Finally, we discuss its limitations and compare it with other tools.
 \end{abstract}
 
@@ -151,8 +151,8 @@ With refinement types, we can provide an invariant that the program should satis
 
 In this report, after a short background on program verification using SMT in section \ref{sec:background}, we will explain 
 how \texttt{LiquidHaskell} works and how it uses SMT solvers to 
-verify the program in section \ref{sec:lh}. Then in section \ref{sec:example} we will provide some examples of how to use 
-\texttt{LiquidHaskell} to verify persistent stack. Finally in section \ref{sec:conclusions} we 
+verify the program in section \ref{sec:lh}. Then, in Section \ref{sec:example}, we provide examples of how to use 
+\texttt{LiquidHaskell} Insertion sort. Finally in section \ref{sec:conclusions} we 
 discuss the limitations of \texttt{LiquidHaskell} and compare it with other tools.
 
 % E.~g.~ 
@@ -170,8 +170,8 @@ type Pos = {v:Int | v > 0}
 type Nat = {v:Int | v >= 0}  
 \end{haskell}  
 
-These are refinements of the basic \texttt{Int} type with logical predicates stating that the 
-value \texttt{v} is strictly positive and non-negative, respectively. 
+These are refinements of the basic \texttt{Int} type, with logical predicates stating that 
+\texttt{v} is strictly positive (\texttt{Pos}) and non-negative (\texttt{Nat}), respectively. 
 We can use these refinement types to annotate functions with preconditions and postconditions, such as:  
 
 \begin{haskell}  
@@ -181,7 +181,7 @@ divide :: n:Nat -> Pos -> {v:Nat | v <= n}
 This type signature states that the function \texttt{divide} takes a non-negative and a positive input, respectively, 
 and ensures that the output is less than or equal to the first argument. 
 If the program statically type-checks, then the function is guaranteed to be correct 
-and will not throw a divide-by-zero runtime error \cite{vazou_refinement_2014}.  
+and will not result in a divide-by-zero runtime error \cite{vazou_refinement_2014}.  
 
 \subsection{\textsc{LiquidHaskell} and SMT}
 \texttt{LiquidHaskell} integrates refinement types with SMT solvers to perform automated verification. 
@@ -204,7 +204,7 @@ making \texttt{LiquidHaskell} a powerful tool for static verification.
 SMT (Satisfiability Modulo Theories) solvers are tools that can check the satisfiability of logical formulas in a specific theory.
 SMT solvers extend the concept of SAT solvers by adding theories (e.g., the theory of equality, 
 of integer numbers, of real numbers, of arrays, of lists, and so on) to the boolean logic \cite{clarke_satisfiability_2018}.
-While SAT solvers can only check the satisfiability of boolean formulas, SMT solvers can check the satisfiability of formulas 
+While SAT solvers can only check the satisfiability of Boolean formulas, SMT solvers can check the satisfiability of formulas 
 that contain variables from different theories. 
 As an example, consider the following formula:
 
@@ -299,10 +299,8 @@ straightforward nature and SMT-LIB2 stands out for presenting logical problems w
 logic including arithmetic, arrays, and bit-vectors.
 \vspace{1em}
 
-To be sure, consider \ref{eq:example-sat} and its satisfiability problem,
-we are wondering is there a value assignment of Boolean variables Tie, Shirt,
-such that three clauses conjunction :
-
+Consider the satisfiability problem \ref{eq:example-sat} involving three clauses. 
+We aim to determine whether there exists an assignment of Boolean variables Tie and Shirt such that the conjunction of the following clauses holds:
 
 \begin{equation}
   \label{eq:example-sat}
@@ -436,8 +434,8 @@ In this section, we will explain how \texttt{LiquidHaskell} works.
 \end{lstlisting}
 \vspace{1em}
 
-By adding these dependencies, \texttt{LiquidHaskell} can now check your program at compile time or via a code linter in your IDE of choice.  
-Take note that there are some options, such as \texttt{reflection} and \texttt{ple}, that can be used to enable reflection and PLE in \texttt{LiquidHaskell}.  
+With these dependencies, \texttt{LiquidHaskell} can check your program at compile time or through a code linter in your preferred IDE.  
+Note that there are options such as \texttt{---reflection} and \texttt{---ple}, which enable reflection and Proof by Logical Evaluation (PLE) in \texttt{LiquidHaskell}.  
 You can either add them as plugin options in the Cabal file or use them directly in the source code as follows:  
 
 \begin{haskell}  
@@ -445,10 +443,10 @@ You can either add them as plugin options in the Cabal file or use them directly
 {-@ LIQUID "--ple" @-}  
 \end{haskell}  
 
-In the following sections, we are going to use both of these options, so we do not add them explicitly to the code snippets.  
+In the following sections, we will use both options, so we do not include them explicitly in the code snippets. 
 
 \subsection{Type Refinement}
-Refinement types allow to constrain the type of the variables by adding predicates to the types 
+Refinement types allow constraints to be placed on variables by adding predicates to their types
 \cite{jhala_programming_2020}. For example, we can define natural numbers as follows:
 
 \begin{haskell}
@@ -475,7 +473,7 @@ to a variable of type Nat.
 
 The error message shows that the inferred type of the variable x is not a subtype of the required type.
 
-Using refinement types, one can define pre-conditions and post-conditions of the functions\cite{jhala_programming_2020}. 
+Refinement types allow defining function preconditions and postconditions\cite{jhala_programming_2020}. 
 For example, consider the following function:
 
 \begin{haskell}
@@ -494,8 +492,7 @@ The function defined above is a partial function because it does not handle the 
  tail (x:_) = x
 \end{haskell}
 
-Now our function is a total function as it doesn't allow the non-empty list to be passed to the \textit{tail}. However, it can't 
-check the following case.
+Now, our function is total, as it does not allow an empty list to be passed to \texttt{tail}.
 
 \begin{haskell}
  x :: [Int]
@@ -760,8 +757,7 @@ sort is functionally correct and meets the desired specifications.
 
 \section{Conclusions, Results, Discussion}
 \texttt{LiquidHaskell}, enhanced with \textbf{Refinement Reflection} and \textbf{Proof by Logical Evaluation (PLE)}, 
-is a verification system that aims to combine the strengths of \textbf{SMT-based} and 
-\textbf{Type Theory (TT)-based} approaches. It allows programmers to verify program correctness 
+combines the strengths of SMT-based and Type Theory (TT)-based verification approaches. It allows programmers to verify program correctness 
 by leveraging a combination of refinement types, code reflection, and automated proof search \cite{vazou_refinement_2018}.
 
 \subsection*{Core Concepts}
