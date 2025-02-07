@@ -172,8 +172,6 @@ type Nat = {v:Int | v >= 0}
 
 These are refinements of the basic \texttt{Int} type with logical predicates stating that the 
 value \texttt{v} is strictly positive and non-negative, respectively. 
-Here, \texttt{Pos} is a refinement type that guarantees the argument and result are strictly positive integers.  
-
 We can use these refinement types to annotate functions with preconditions and postconditions, such as:  
 
 \begin{haskell}  
@@ -438,8 +436,17 @@ In this section, we will explain how \texttt{LiquidHaskell} works.
 \end{lstlisting}
 \vspace{1em}
 
-By adding this dependency, \texttt{LiquidHaskell} can now check your program at compile time or via code linter in your IDE of choice.
-In the following sections, we will explain how to use \texttt{LiquidHaskell} to verify the program.
+By adding these dependencies, \texttt{LiquidHaskell} can now check your program at compile time or via a code linter in your IDE of choice.  
+Take note that there are some options, such as \texttt{reflection} and \texttt{ple}, that can be used to enable reflection and PLE in \texttt{LiquidHaskell}.  
+You can either add them as plugin options in the Cabal file or use them directly in the source code as follows:  
+
+\begin{haskell}  
+{-@ LIQUID "--reflection" @-}  
+{-@ LIQUID "--ple" @-}  
+\end{haskell}  
+
+In the following sections, we are going to use both of these options, so we do not add them explicitly to the code snippets.  
+
 \subsection{Type Refinement}
 Refinement types allow to constrain the type of the variables by adding predicates to the types 
 \cite{jhala_programming_2020}. For example, we can define natural numbers as follows:
@@ -530,14 +537,14 @@ There are two ways to define and reason about a function in the refinement logic
 
 \texttt{Measure} can be used on a function with one argument that is pattern-matched in the function body. Then,
 \texttt{LiquidHaskell} copies the function to the refinement logic, adds a refinement type to the constructor of the function's argument, and emits inferred global
-invariants related to the refinement. Consider the following example:
+invariants related to the refinement \cite{niki_lecture_2024}. Consider the following example:
 
 \begin{haskell}
 data Bag a = Bag { toMap :: M.Map a Int } deriving Eq
 {-@ measure bag @-}
 {-@ bag :: Ord a => List a -> Bag a @-}
 bag :: (Ord a) => List a -> Bag a
-bag Emp = B.empty
+bag Nil = B.empty
 bag (Cons x xs) = B.put x (bag xs)
 \end{haskell}
 
@@ -553,12 +560,12 @@ So then we can use the \texttt{bag} function in the refinement logic to reason a
 For instance, in the following example, we can use the \texttt{bag} function to reason about the program:
 
 \begin{haskell}
-{-@ equalBagExample1 :: { bag(Cons 1 (Cons 3 Emp)) ==  bag( Cons 2 Emp) } @-}
+{-@ equalBagExample1 :: { bag(Cons 1 (Cons 3 Nil)) ==  bag( Cons 2 Nil) } @-}
 
 >>    VV : {v : () | v == GHC.Tuple.Prim.()}
 >>    .
 >>    is not a subtype of the required type
->>      VV : {VV##2465 : () | bag (Cons 1 (Cons 3 Emp)) == bag (Cons 2 Emp)}
+>>      VV : {VV##2465 : () | bag (Cons 1 (Cons 3 Nil)) == bag (Cons 2 Nil)}
 \end{haskell}
 
 The $\{x = y\}$ is shorthand for $\{ v : () \mid x = y \}$, where $x$ and $y$ are expressions.
@@ -590,9 +597,9 @@ In the following subsection, we will show how to use \texttt{LiquidHaskell} to v
 
 \subsection{Verification}
 \texttt{LiquidHaskell} allows structure proofs to follow the style of calculational or equational reasoning popularized in classic texts
-and implemented in proof assistants like Coq and Agda. \texttt{LiquidHaskell} is equipped with a family of equation combinators
+and implemented in proof assistants like Coq and Agda . It is equipped with a family of equation combinators
 for logical operators in the theory QF-UFLIA \cite{vazou_refinement_2018}.
-In the following example, we show how to use \texttt{LiquidHaskell} to verify that the \texttt{++} function is associative:
+In the following example, we show how to use these combinators to verify that the \texttt{++} function is associative:
 
 \begin{haskell}
 {-@ assoc :: xs:[a] -> ys:[a] -> zs:[a] 
@@ -634,10 +641,10 @@ application terms by instantiating them with their definition corresponds to an 
 \section{Example Application}
 \label{sec:example}
 
-In this section, we discuss the insertion sort algorithm and how to verify its functional correctness using \texttt{LiquidHaskell}.
-We take the intrinsic approach to leverage the refinement types so that we don't need to proof the correctness separately.
-Insertion sort is a simple algorithm that builds a sorted list by inserting one element at a time.
-Using \texttt{LiquidHaskell}, we aim to ensure that the sorted list is both ordered and a permutation of the input.
+In this section, we discuss the insertion sort algorithm and how to verify its functional correctness using \texttt{LiquidHaskell}.  
+We take an intrinsic approach, leveraging refinement types so that we do not need to prove correctness separately.  
+Insertion sort is a simple algorithm that builds a sorted list by inserting one element at a time.  
+Using \texttt{LiquidHaskell}, we aim to ensure that the sorted list is both ordered and a permutation of the input.  
 
 \subsection{Definition of Insertion Sort}
 
@@ -652,12 +659,12 @@ and the \texttt{insertSort} function, which recursively sorts the input list. Be
 module InsertionSort where
 
 -- Define the List type
-data List a = Emp | Cons a (List a) deriving (Eq, Show)
+data List a = Nil | Cons a (List a) deriving (Eq, Show)
 
 -- Insert operation
 {-@ reflect insert @-}
 insert :: (Ord a) => a -> List a -> List a
-insert x Emp = Cons x Emp
+insert x Nil = Cons x Nil
 insert x (Cons y ys)
   | x <= y    = Cons x (Cons y ys)
   | otherwise = Cons y (insert x ys)
@@ -665,7 +672,7 @@ insert x (Cons y ys)
 -- Insertion Sort operation
 {-@ reflect insertSort @-}
 insertSort :: (Ord a) => List a -> List a
-insertSort Emp = Emp
+insertSort Nil = Nil
 insertSort (Cons x xs) = insert x (insertSort xs)
 \end{haskell}
 
@@ -682,10 +689,10 @@ We define a helper function, \texttt{isSorted}, to check whether a list is sorte
 \begin{haskell}
 {-@ reflect isSorted @-}
 isSorted :: (Ord a) => List a -> Bool
-isSorted Emp = True
+isSorted Nil = True
 isSorted (Cons x xs) =
   isSorted xs && case xs of
-    Emp        -> True
+    Nil        -> True
     Cons x1 _  -> x <= x1
 \end{haskell}
 
@@ -718,7 +725,7 @@ As the specification is not enough for the \texttt{LiquidHaskell} to verify the 
 {-@ lem_ins :: y:_ -> {x:_ | y < x} -> {ys:_ | isSorted (Cons y ys)} 
     -> {isSorted (Cons y (insert x ys))} @-}
 lem_ins :: (Ord a) => a -> a -> List a -> Bool
-lem_ins y x Emp = True
+lem_ins y x Nil = True
 lem_ins y x (Cons y1 ys) = if y1 < x then lem_ins y1 x ys else True
 \end{haskell}
 
@@ -730,7 +737,7 @@ Then with the use of \texttt{withProof}, we can use the lemma to prove the corre
 {-@ insert :: x:_ -> {xs:_ | isSorted xs} 
   -> {ys:_ | isSorted ys && Map_union (singelton x) (bag xs) == bag ys  } @-}
 insert :: (Ord a) => a -> List a -> List a
-insert x Emp = Cons x Emp
+insert x Nil = Cons x Nil
 insert x (Cons y ys)
   | x <= y = Cons x (Cons y ys)
   | otherwise = Cons y (insert x ys) `withProof` lem_ins y x ys
@@ -744,7 +751,7 @@ both the sortedness and permutation properties.
 \begin{haskell}
 {-@ insertSort :: xs:_ -> {ys:_ | isSorted ys && bag xs == bag ys} @-}
 insertSort :: (Ord a) => List a -> List a
-insertSort Emp = Emp
+insertSort Nil = Nil
 insertSort (Cons x xs) = insert x (insertSort xs)
 \end{haskell}
 
