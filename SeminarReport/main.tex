@@ -122,7 +122,7 @@
   This report gives a brief overview of \texttt{LiquidHaskell}, a tool that extends Haskell with refinement types. 
   Refinement types are types that extends expressiveness of Haskell types systems by providing predicates that can verify
   invarients of the program. This report explains briefly how SMT solvers leveraged by \texttt{LiquidHaskell} and 
-  how to use \texttt{LiquidHaskell} by providing some examples. Finally, we discuss the limitations of \texttt{LiquidHaskell} and compare it with other tools.
+  how to use them by providing some examples. Finally, we discuss its limitations and compare it with other tools.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -145,8 +145,8 @@ Consider the following example:
 The example above is a simple function that calculates the average of a list of integers. This can be a source of runtime
 error if the list is empty. While this can be caught by testing, it is not always possible to test all the possible inputs.
 Another way to verify the program is to use program verification tools. These tools use mathematical logic to check the program.
-One of such tools that is used in Haskell programming language is \texttt{LiquidHaskell}. \texttt{LiquidHaskell} 
-(\texttt{LiquidHaskell}) extends Haskell with refinement types which are types that extend the expressiveness of Haskell.
+One of such tools that is used in Haskell programming language is \texttt{LiquidHaskell}. It 
+ extends Haskell with refinement types which are types that extend the expressiveness of Haskell.
 With refinement types, we can provide invariant that the program should satisfy \cite{jhala_programming_2020}. 
 
 In this report, after a short backgrouund on program verfication using SMT in section \ref{sec:background}, we will explain 
@@ -161,44 +161,31 @@ discuss the limiations of \texttt{LiquidHaskell} and compare it with other tools
 \section{Overview}
 \label{sec:background}
 
-\subsection{Type Systems and Program Verification}
-Programming verification ensures that software behaves as expected by using formal methods. 
-One common approach is type safety, which helps catch errors at compile time. 
-However, traditional type systems in functional languages like Haskell often lack expressiveness 
-to specify and enforce complex program properties statically \cite{jhala_programming_2020}. 
-While testing is another method for verification, 
-it is impractical to cover all possible inputs, especially in large-scale applications.
+\subsection{Refinement Types}  
+Refinement types extend conventional type systems by attaching logical predicates to types, 
+generalizing Floyd-Hoare Logic for functional languages \cite{vazou_refinement_2014}. For example:  
 
-\subsection{Refinement Types}
-Refinement types extend conventional type systems by attaching logical predicates to types. 
-This allows for more precise specifications of program invariants. 
-For instance, in \texttt{LiquidHaskell}, a type annotation ensures that a function always receives a positive integer:
+\begin{haskell}  
+type Pos = {v:Int | v > 0}  
+type Nat = {v:Int | v >= 0}  
+\end{haskell}  
 
-\begin{haskell}
-{-@ incr :: Pos -> Pos @-}
-incr :: Int -> Int
-incr x = x + 1
-\end{haskell}
+These are refinements of the basic \texttt{Int} type with logical predicates stating that the 
+value \texttt{v} is strictly positive and non-negative, respectively. 
+Here, \texttt{Pos} is a refinement type that guarantees the argument and result are strictly positive integers.  
 
-Here, \texttt{Pos} is a refinement type that guarantees the argument and result are strictly positive integers. 
-Unlike standard type systems, refinement types use logical constraints to enable static program verification.
-\cite{vazou_refinement_2014}.
+We can use these refinement types to annotate functions with preconditions and postconditions, such as:  
 
-\subsection{SMT Solvers}
-Satisfiability Modulo Theories (SMT) solvers extend SAT solvers by incorporating various 
-mathematical theories (e.g., arithmetic, arrays, lists). These solvers determine the 
-satisfiability of logical formulas with complex constraints \cite{clarke_satisfiability_2018}. 
-A common SMT solver used in verification is Z3, which supports multiple theories and decision procedures.
+\begin{haskell}  
+divide :: n:Nat -> Pos -> {v:Nat | v <= n}  
+\end{haskell}  
 
-For example, given the constraints:
+This type signature states that the function \texttt{divide} takes a non-negative and a positive input, respectively, 
+and ensures that the output is less than or equal to the first argument. 
+If the program statically type-checks, then the function is guaranteed to be correct 
+and will not throw a divide-by-zero runtime error \cite{vazou_refinement_2014}.  
 
-\begin{equation}
-x + y \leq 10 \quad \text{and} \quad x = y - 7
-\end{equation}
-
-An SMT solver can determine whether a valid assignment exists for \(x\) and \(y\).
-
-\subsection{\texttt{LiquidHaskell} and SMT}
+\subsection{\textsc{LiquidHaskell} and SMT}
 \texttt{LiquidHaskell} integrates refinement types with SMT solvers to perform automated verification. 
 It encodes refinement predicates as logical formulas and delegates their satisfiability checking to an SMT solver like Z3 
 \cite{vazou_refinement_2014}. 
@@ -305,7 +292,11 @@ and the sum time required to solve, it greatly shortens. Tacticals are combiners
 Z3 allows the use of optimization services along with user-defined problems in order to study the satisfiability of the problem while maximizing or minimizing objective functions. This applies to those problems which require solutions that are to be optimized under given constraints \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection{Applications and Example of Z3}
-Software analysis verification and symbolic execution along with software analysis verification rely heavily on making use of the Z3 platform. Z3 operates through SMT-LIB2 scripts for textual logical problem inputs as well as program application interfaces using Python fundamental sources and C++ constructs and OCaml programming code. Both Z3 users prefer the Python API because of its straightforward nature and SMT-LIB2 stands out for presenting logical problems with predefined logics including arithmetic, arrays and bit-vectors.
+Software analysis verification and symbolic execution along with software analysis verification rely heavily 
+on making use of the Z3 platform. Z3 operates through SMT-LIB2 scripts as well as program application interfaces 
+using Python, C++, and OCaml. Z3 users prefer the Python API because of its 
+straightforward nature and SMT-LIB2 stands out for presenting logical problems with predefined 
+logics including arithmetic, arrays and bit-vectors.
 \vspace{1em}
 
 To be sure, consider \ref{eq:example-sat} and its satisfiability problem,
@@ -387,9 +378,9 @@ solve(Not(fml))
 unsat
 \end{lstlisting}
 
+\vspace{1em}
 
 
-\paragraph{Theories Involved}
 The integrated theories enabling this reasoning are:
 
 \begin{itemize}
@@ -418,12 +409,10 @@ This example illustrates Z3's theory combination mechanism, which:
 \end{itemize}
 
 This capability makes Z3 particularly useful for software verification, as real-world programs inherently integrate these concepts \cite{nikolaj_bjorner_programming_nodate}.
-\section{Working with \texttt{LiquidHaskell}}
+\section{Working with \textsc{LiquidHaskell}}
 \label{sec:lh}
-\texttt{LiquidHaskell} is a tool that extends Haskell with refinement types. Refinement types enhance 
-the expressiveness of Haskell types systems by providing predicates that can verify invariants of the program \cite{vazou_refinement_2014}.
-In this section, we will explain how \texttt{LiquidHaskell} works.
-\texttt{LiquidHaskell} is available as a GHC plugin. To use it, you need to add its dependencies to the cabal file as following \cite{noauthor_ucsd-progsyslh-plugin-demo_2024}:
+In this section, we will explain how to use \texttt{LiquidHaskell} and how it works.
+\texttt{LiquidHaskell} is available as a GHC plugin. To use it, you need to add its dependecies to the cabal file as following \cite{noauthor_ucsd-progsyslh-plugin-demo_2024}:
 
 \vspace{1em}
 \begin{lstlisting}
@@ -639,6 +628,7 @@ The key idea in PLE is to mimic type-level computation within SMT-logics by repr
 application terms by instantiating them with their definition corresponds to an enabled guard \cite{vazou_refinement_2018}.
 
 \section{Example Application}
+\label{sec:example}
 
 In this section, we discuss the insertion sort algorithm and how to verify its functional correctness using \texttt{LiquidHaskell}.
 We take the intrinsic approach to leverage the refinement types so that we don't need to proof the correctness separately.
@@ -756,10 +746,6 @@ insertSort (Cons x xs) = insert x (insertSort xs)
 
 By verifying these properties using \texttt{LiquidHaskell}, we ensure that insertion 
 sort is functionally correct and meets the desired specifications.
-\subsection{Conclusion}
-To summarize, we use the proposition-as-types principle to leverage \texttt{LiquidHaskell} for program verification.
-Haskell's expressive type system, combined with \texttt{LiquidHaskell}'s refinement types, allows for precise specification of program invariants.
-\label{sec:example}
 
 \section{Conclusions, Results, Discussion}
 \texttt{LiquidHaskell}, enhanced with \textbf{Refinement Reflection} and \textbf{Proof by Logical Evaluation (PLE)}, 
@@ -831,8 +817,7 @@ Additionally, we acknowledge the use of AI-assisted tools throughout the prepara
 GitHub Copilot was employed for minor rewording and auto-completion in code snippets, 
 helping streamline the coding process. For better comprehension of academic papers and extracting key information, 
 we leveraged ChatGPT and NotebookLM. These tools assisted in synthesizing complex concepts and structuring 
-our explanations more effectively. Furthermore, GitHub Copilot was also utilized for grammar checking and minor 
-refinements in the text.
+our explanations more effectively. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \nocite{*}
