@@ -120,8 +120,8 @@
 
 \begin{abstract}
   This report gives a brief overview of \texttt{LiquidHaskell}, a tool that extends Haskell with refinement types. 
-  Refinement types are types that extends expressiveness of Haskell types systems by providing predicates that can verify
-  invarients of the program. This report explains briefly how SMT solvers leveraged by \texttt{LiquidHaskell} and 
+  Refinement types are types that extends the expressiveness of Haskell types systems by providing predicates that can verify
+  nvariants of the program. This report explains briefly how SMT solvers are leveraged by \texttt{LiquidHaskell} and 
   how to use them by providing some examples. Finally, we discuss its limitations and compare it with other tools.
 \end{abstract}
 
@@ -145,15 +145,15 @@ Consider the following example:
 The example above is a simple function that calculates the average of a list of integers. This can be a source of runtime
 error if the list is empty. While this can be caught by testing, it is not always possible to test all the possible inputs.
 Another way to verify the program is to use program verification tools. These tools use mathematical logic to check the program.
-One of such tools that is used in Haskell programming language is \texttt{LiquidHaskell}. It 
+One such tool used in the Haskell programming language is \texttt{LiquidHaskell}. It 
  extends Haskell with refinement types which are types that extend the expressiveness of Haskell.
-With refinement types, we can provide invariant that the program should satisfy \cite{jhala_programming_2020}. 
+With refinement types, we can provide an invariant that the program should satisfy \cite{jhala_programming_2020}. 
 
-In this report, after a short backgrouund on program verfication using SMT in section \ref{sec:background}, we will explain 
+In this report, after a short background on program verification using SMT in section \ref{sec:background}, we will explain 
 how \texttt{LiquidHaskell} works and how it uses SMT solvers to 
-verify the program in section \ref{sec:lh}. Then in section \ref{sec:example} we will provide some examples how to use 
+verify the program in section \ref{sec:lh}. Then in section \ref{sec:example} we will provide some examples of how to use 
 \texttt{LiquidHaskell} to verify persistent stack. Finally in section \ref{sec:conclusions} we 
-discuss the limiations of \texttt{LiquidHaskell} and compare it with other tools.
+discuss the limitations of \texttt{LiquidHaskell} and compare it with other tools.
 
 % E.~g.~ 
 % ``quoting'' is done by using two backticks and two single quotes
@@ -214,10 +214,10 @@ As an example, consider the following formula:
   \varphi = (x \lor y) \land (\lnot x \lor z)
 \end{equation}
 
-A SAT solver can check the satisfiability of the formula \(\varphi\) by checking if there is an assignment for the variables \(x, y, z\).
+An SAT solver can check the satisfiability of the formula \(\varphi\) by checking if there is an assignment for the variables \(x, y, z\).
 For instance, \(x = true, y = false, z = true\) is an assignment that makes \(\varphi\) \(true\). 
 
-On the other hand, SMT solvers can check the satisfiability of formulas that contain variables that required arithmetic theory as following formula:
+On the other hand, SMT solvers can check the satisfiability of formulas that contain variables that require arithmetic theory as the following formula:
 
 \begin{equation}
   x + y \leq 10 \quad and \quad x = y - 7
@@ -273,7 +273,7 @@ It includes a Datalog engine and supports relational algebra and Property Direct
 
 \subsubsection*{NLSat Solver}
 The NLSat solver is specialized for non-linear arithmetic problems. 
-It uses a combination of algebraic methods and SAT solving techniques to handle polynomial constraints \cite{nikolaj_bjorner_programming_nodate}.
+It uses a combination of algebraic methods and SAT-solving techniques to handle polynomial constraints \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection*{SAT Solver}
 The SAT solver in Z3 is designed for propositional logic problems. It uses advanced techniques like in-processing 
@@ -285,9 +285,11 @@ providing solutions for more complex logical problems \cite{nikolaj_bjorner_prog
 
 
 \subsubsection{Tactics}
-Tactics in Z3 are used for preprocessing, formula simplification, and the generation of sub-goals. they
-are essential to decompose complex problems into relatively simple fragments. The preprocess tactics simplify the input formulae before they are fed into the main solver. It can include heuristics such as the propagation of constants, arithmetic simplification, and removal of redundant constraints. The Cube and Conquer tactic is used to split the search space into smaller sub-problems. (cubes) that can be solved independently. This is a very useful scheme for parallel solving
-and the sum time required to solve, it greatly shortens. Tacticals are combiners which make composition of multiple tactics \cite{nikolaj_bjorner_programming_nodate}.
+Tactics in Z3 are used for preprocessing, formula simplification, and the generation of sub-goals. They
+are essential for decomposing complex problems into relatively simple fragments. The preprocess tactics simplify the input formulae before they are fed into the main solver.
+ It can include heuristics such as the propagation of constants, arithmetic simplification, and removal of redundant constraints. The Cube and Conquer tactic is used to split
+ the search space into smaller sub-problems. (cubes) that can be solved independently. This is a very useful scheme for parallel solving
+and the sum time required to solve, it greatly shortens. Tacticals are combiners that make the composition of multiple tactics \cite{nikolaj_bjorner_programming_nodate}.
 \subsubsection{Optimization}
 Z3 allows the use of optimization services along with user-defined problems in order to study the satisfiability of the problem while maximizing or minimizing objective functions. This applies to those problems which require solutions that are to be optimized under given constraints \cite{nikolaj_bjorner_programming_nodate}.
 
@@ -296,12 +298,12 @@ Software analysis verification and symbolic execution along with software analys
 on making use of the Z3 platform. Z3 operates through SMT-LIB2 scripts as well as program application interfaces 
 using Python, C++, and OCaml. Z3 users prefer the Python API because of its 
 straightforward nature and SMT-LIB2 stands out for presenting logical problems with predefined 
-logics including arithmetic, arrays and bit-vectors.
+logic including arithmetic, arrays, and bit-vectors.
 \vspace{1em}
 
 To be sure, consider \ref{eq:example-sat} and its satisfiability problem,
 we are wondering is there a value assignment of Boolean variables Tie, Shirt,
-such that three clauses conjuction :
+such that three clauses conjunction :
 
 
 \begin{equation}
@@ -309,7 +311,7 @@ such that three clauses conjuction :
   (Tie \lor Shirt) \land (\lnot Tie \lor Shirt) \land (\lnot Tie \lor \lnot Shirt)
 \end{equation}
 
-Formula \ref{eq:example-sat}  can be solved in SMTLIB2 as following code:
+Formula \ref{eq:example-sat}  can be solved in SMTLIB2 as the following code:
 
 \begin{figure}[ht]
   \begin{lstlisting} [language=SMTlIB2]
@@ -359,7 +361,9 @@ sat
 \vspace{1em}
 
 
-When calling s.check(), the solver determines that the assertions are satisfiable (sat)—meaning there is a way to assign values to Tie and Shirt that makes all the conditions true. One possible solution is Tie = false and Shirt = true, which can be retrieved using s.model().
+When calling s.check(), the solver determines that the assertions are satisfiable
+ (sat)—meaning there is a way to assign values to the Tie and Shirt that make all the 
+conditions true. One possible solution is Tie = false and Shirt = true, which can be retrieved using s.model().
 \vspace{1em}
 
 
@@ -411,8 +415,8 @@ This example illustrates Z3's theory combination mechanism, which:
 This capability makes Z3 particularly useful for software verification, as real-world programs inherently integrate these concepts \cite{nikolaj_bjorner_programming_nodate}.
 \section{Working with \textsc{LiquidHaskell}}
 \label{sec:lh}
-In this section, we will explain how to use \texttt{LiquidHaskell} and how it works.
-\texttt{LiquidHaskell} is available as a GHC plugin. To use it, you need to add its dependecies to the cabal file as following \cite{noauthor_ucsd-progsyslh-plugin-demo_2024}:
+In this section, we will explain how \texttt{LiquidHaskell} works.
+\texttt{LiquidHaskell} is available as a GHC plugin. To use it, you need to add its dependencies to the cabal file as following \cite{noauthor_ucsd-progsyslh-plugin-demo_2024}:
 
 \vspace{1em}
 \begin{lstlisting}
@@ -491,7 +495,7 @@ check the following case.
  x = tail (tail [1, 2])
 \end{haskell}
 
-When calling functions, \texttt{LiquidHaskell} won't look into the body of the function to see if the first application of \textit{tail} gives the valid non-empty list to the second \textit{tail}.
+When calling functions, \texttt{LiquidHaskell} won't look into the body of the function to see if the first application of the \textit{tail} gives the valid non-empty list to the second \textit{tail}.
 To allow \texttt{LiquidHaskell} consider the above example as safe, we need to also specify the post-condition for our function as following:
 
 \begin{haskell}
@@ -537,7 +541,7 @@ bag Emp = B.empty
 bag (Cons x xs) = B.put x (bag xs)
 \end{haskell}
 
-This code add the bag refinement type to the List data type. The \texttt{measure} directive is used to define the \texttt{bag} function,
+This code adds the bag refinement type to the List data type. The \texttt{measure} directive is used to define the \texttt{bag} function,
 which is then copied to the refinement logic. It means that now the type of list constructors would have:
 
 \begin{haskell}
@@ -586,7 +590,7 @@ In the following subsection, we will show how to use \texttt{LiquidHaskell} to v
 
 \subsection{Verification}
 \texttt{LiquidHaskell} allows structure proofs to follow the style of calculational or equational reasoning popularized in classic texts
-and implemented in proof assistants like Coq and Agda . \texttt{LiquidHaskell} is equipped with a family of equation combinators
+and implemented in proof assistants like Coq and Agda. \texttt{LiquidHaskell} is equipped with a family of equation combinators
 for logical operators in the theory QF-UFLIA \cite{vazou_refinement_2018}.
 In the following example, we show how to use \texttt{LiquidHaskell} to verify that the \texttt{++} function is associative:
 
@@ -615,7 +619,7 @@ assoc (x : xs) ys zs =
       *** QED
 \end{haskell}
 
-These combinators define as follows:
+These combinators are defined as follows:
 \begin{haskell}
   (===) :: x: a -> y: { a | x = y }  -> { v: a | v = x }
   data QED = QED
@@ -758,9 +762,9 @@ by leveraging a combination of refinement types, code reflection, and automated 
 \begin{itemize}
   \item \textbf{Refinement Types}: \texttt{LiquidHaskell} uses refinement types to specify program properties, 
         extending basic types with logical predicates drawn from an SMT-decidable logic.
-    \item \textbf{Refinement Reflection}: The implementation of a user-defined function is reflected into 
-      its output refinement type. This converts the function's type signature into a precise description of the function's behavior 
-      . At uses of the function, the definition is instantiated in the SMT logic \cite{vazou_refinement_2018}.
+    \item \textbf{Refinement Reflection}: The implementation of a user-defined function is reflected in
+      its output refinement type. This converts the function's type signature into a precise description of the function's behavior. 
+      At uses of the function, the definition is instantiated in the SMT logic \cite{vazou_refinement_2018}.
    \item \textbf{Propositions as Types}: Proofs are written as regular Haskell programs, 
      utilizing the Curry-Howard isomorphism. This allows programmers to use language mechanisms 
      like branching, recursion, and auxiliary functions to construct proofs \cite{vazou_refinement_2018}.
@@ -788,7 +792,7 @@ by leveraging a combination of refinement types, code reflection, and automated 
 
 \subsection*{Comparison with Other SMT-Based Verifiers}
 \begin{itemize}
-    \item \textbf{Axiomatization}: Existing SMT-based verifiers such as Dafny use axioms to encode user defined functions 
+    \item \textbf{Axiomatization}: Existing SMT-based verifiers such as Dafny use axioms to encode user-defined functions 
         which can lead to incomplete verification and matching loops. \texttt{LiquidHaskell}, uses refinement 
         reflection to encode functions, along with PLE for complete and terminating verification \cite{vazou_refinement_2018}.
     \item \textbf{Fuel Parameter}: Dafny and F* use a fuel parameter to limit the instantiation of axioms which can lead 
@@ -816,7 +820,7 @@ documentation provided the foundation for this work.
 Additionally, we acknowledge the use of AI-assisted tools throughout the preparation of this report. 
 GitHub Copilot was employed for minor rewording and auto-completion in code snippets, 
 helping streamline the coding process. For better comprehension of academic papers and extracting key information, 
-we leveraged ChatGPT and NotebookLM. These tools assisted in synthesizing complex concepts and structuring 
+we leveraged ChatGPT and NotebookLM. These tools assist in synthesizing complex concepts and structuring 
 our explanations more effectively. 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
