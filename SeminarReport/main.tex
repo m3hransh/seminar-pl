@@ -105,7 +105,7 @@
   \vspace{1em}
 }%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\title{\textsc{Liquid}{H}\textsc{askell}}
+\title{\textbf{Liquid}{H}\textbf{askell}}
 \event{Seminar: Programming Languages in Winter term 2024/2025}
 \author{Mehran Shahidi, Saba Safarnezhad
   \institute{Rheinland-Pfälzische Technische Universität Kaiserslautern-Landau, Department of Computer Science}}
@@ -119,40 +119,33 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \begin{abstract}
-  This report gives a brief overview of \texttt{LiquidHaskell}, a tool that extends Haskell with refinement types. 
-  Refinement types are types that extend the expressiveness of Haskell's type system by providing predicates that can verify invariants of the program. 
-  This report explains briefly how SMT solvers are leveraged by \texttt{LiquidHaskell} and 
-  how to use them by providing some examples. Finally, we discuss its limitations and compare it with other tools.
+  This report provides a brief overview of \texttt{LiquidHaskell}, a tool that extends Haskell with refinement types. 
+  Refinement types are types that extend the expressiveness of Haskell's type system by providing predicates that can specify invariants of the program. 
+  This report illustrates features of \texttt{LiquidHaskell} through a small formalization and demonstrate its application with several examples. 
+  Finally, we discuss its limitations and compare it with other tools.
 \end{abstract}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \section{Introduction}
 \label{sec:introduction}
-Programming verification is an important step in software development. It is the process of
-verifying that a program behaves as expected. There has been a lot of research in this 
-area and many tools have been developed. 
-Type safety is one of the important features of programming languages that helps to prevent runtime errors.
-Despite catching many errors at compile time, type systems are not powerful enough to catch all the errors.
-On the other hand, testing is another way to verify the program, but it is not always possible to test all the possible inputs.
-Consider the following example:
+Program verification is the process of proving or disproving that a program conforms to its specifications.
+Generally, there are two approaches: static and dynamic verification.
+Dynamic verification tests program correctness during execution by providing inputs and checking the outputs. 
+This approach is not exhaustive and may not cover all possible inputs.
+In contrast, static verification uses mathematical logic to establish correctness without executing the program.
+This approach includes techniques such as model checking and deductive verification.
+In deductive verification, the user supplies the program's specifications, and the verifier checks if the program satisfies them \cite{wiki_software_2024}.
 
-\begin{haskell}
-  average    :: [Int] -> Int
-  average xs = sum xs `div` length xs
-\end{haskell}
+Two main trends in deductive verifiers are Satisfiability Modulo Theory (SMT)-based and Typed-Theory (TT)-based approaches. 
+TT-based verifiers leverage type-level computation (normalization) to facilitate principled reasoning about terminating user-defined functions,
+whereas SMT-based verifiers often use SMT solvers to check the satisfiability of universally-quanitified axioms—axioms 
+that encode the semantics of user-defined functions within a specific theory (e.g., linear arithmetic, strings, sets, or bitvectors).
+Refinement types combine the best of both worlds by fusing types with SMT based validity checking \cite{vazou_refinement_2018}.
 
-The example above is a simple function that calculates the average of a list of integers. This can be a source of runtime
-error if the list is empty. While this can be caught by testing, it is not always possible to test all the possible inputs.
-Another way to verify the program is to use program verification tools. These tools use mathematical logic to check the program.
-One such tool used in the Haskell programming language is \texttt{LiquidHaskell}. It 
- extends Haskell with refinement types which are types that extend the expressiveness of Haskell.
-With refinement types, we can provide an invariant that the program should satisfy \cite{jhala_programming_2020}. 
-
-In this report, after a short background on program verification using SMT in section \ref{sec:background}, we will explain 
-how \texttt{LiquidHaskell} works and how it uses SMT solvers to 
-verify the program in section \ref{sec:lh}. Then, in Section \ref{sec:example}, we provide examples of how to use 
-\texttt{LiquidHaskell} Insertion sort. Finally in section \ref{sec:conclusions} we 
+In this report, after a short overview on refinement types and SMT solvers in section \ref{sec:background}, 
+we explain \texttt{LiquidHaskell}'s features in section \ref{sec:lh}. Then, in section \ref{sec:example}, we provide an example of verifying \texttt{Insertion Sort}. 
+Finally in section \ref{sec:conclusions} we 
 discuss the limitations of \texttt{LiquidHaskell} and compare it with other tools.
 
 % E.~g.~ 
@@ -162,8 +155,7 @@ discuss the limitations of \texttt{LiquidHaskell} and compare it with other tool
 \label{sec:background}
 
 \subsection{Refinement Types}  
-Refinement types extend conventional type systems by attaching logical predicates to types, 
-generalizing Floyd-Hoare Logic for functional languages \cite{vazou_refinement_2014}. For example:  
+Refinement types extend conventional type systems by attaching logical predicates to types \cite{vazou_refinement_2014}. For example:  
 
 \begin{haskell}  
 type Pos = {v:Int | v > 0}  
@@ -175,15 +167,15 @@ These are refinements of the basic \texttt{Int} type, with logical predicates st
 We can use these refinement types to annotate functions with preconditions and postconditions, such as:  
 
 \begin{haskell}  
-divide :: n:Nat -> Pos -> {v:Nat | v <= n}  
+divide :: n:Nat -> Pos -> Int  
 \end{haskell}  
 
-This type signature states that the function \texttt{divide} takes a non-negative and a positive input, respectively, 
-and ensures that the output is less than or equal to the first argument. 
-If the program statically type-checks, then the function is guaranteed to be correct 
-and will not result in a divide-by-zero runtime error \cite{vazou_refinement_2014}.  
+This type signature states that the function \texttt{divide} takes a non-negative and a positive input, respectively. 
+If we use static verifier, this only allows applications
+of the function that satisfy the preconditions, ensuring that the function is safe to call
+and will not result in a divide-by-zero runtime error \cite{vazou_refinement_2014}. 
 
-\subsection{\textsc{LiquidHaskell} and SMT}
+\subsection{\textbf{LiquidHaskell} and SMT}
 \texttt{LiquidHaskell} integrates refinement types with SMT solvers to perform automated verification. 
 It encodes refinement predicates as logical formulas and delegates their satisfiability checking to an SMT solver like Z3 
 \cite{vazou_refinement_2014}. 
@@ -220,76 +212,6 @@ On the other hand, SMT solvers can check the satisfiability of formulas that con
 \begin{equation}
   x + y \leq 10 \quad and \quad x = y - 7
 \end{equation}
-
-\subsection{Z3 SMT Solvers}
-\subsubsection*{Overall System Architecture of Z3}
-The overall system architecture of Z3 is aimed at eﬃciently solving Satisfiability Modulo Theories (SMT) problems. Here's a detailed breakdown of the major components and their interactions:
-
- \begin{figure}[ht]
-  \begin{center}
-    \fbox{\includegraphics[width=.9\linewidth]{SMT}}%
-    % fbox for "framed box"
-  \end{center}
-  \caption{%
-     Overall system architecture of Z3
-    \cite{nikolaj_bjorner_programming_nodate}
-  }
-  \label{fig:scholar} % NOTE: \label must appear after \caption
-\end{figure}
-
-\subsubsection{Interfaces to Z3}
-Z3 can be interacted with using SMT-LIB2 scripts supplied as text ﬁles or through a pipe.
-Besides this, high-level programming languages can make API calls to Z3, which are proxies
-for calls over a C-based API \cite{nikolaj_bjorner_programming_nodate}.
-
-\subsubsection{Logical Formulas}
-Z3 accepts logical formulas built from atomic variables and logical connectives, which can include symbols defined by various theories.
-These formulas use basic building blocks like Boolean variables, integers, and reals, combined with logical operators such as
-\texttt{And}, \texttt{Or}, \texttt{Not}, \texttt{Implies}, and \texttt{Xor}. Z3 handles complex logical expressions by
-integrating symbols from multiple theories, such as arrays and arithmetic, allowing it to model a wide range of problems.
-The formulas generally follow the SMT-LIB2 standard, ensuring interoperability between different SMT solvers. 
-This versatility makes Z3 a powerful tool for solving diverse logical problems efficiently \cite{nikolaj_bjorner_programming_nodate}.
-
-\subsubsection{Theories}
-Z3 supports multiple theories, including Equality and Uninterpreted Functions (EUF), Arithmetic (both linear and non-linear),
-Arrays, Bit-Vectors, Algebraic Datatypes, Sequences, and Strings. Each theory has specialized decision procedures for solving
-related formulas \cite{nikolaj_bjorner_programming_nodate}.
-
-
-\subsubsection{Solver}
-Z3 provides services for deciding the satisfiability of formulas. This includes handling incrementality, scopes, assumptions, 
-cores, models, and other methods like statistics, proofs, and retrieving solver state. Specialized solvers are included for 
-different types of problems \cite{nikolaj_bjorner_programming_nodate}.
-
-\subsubsection*{SMT Solver}
-The SMT solver in Z3 is a general-purpose solver that integrates various theories to decide the satisfiability of logical formulas. 
-It uses the CDCL(T) architecture, which combines Conflict-Driven Clause Learning (CDCL) with theory solvers \cite{nikolaj_bjorner_programming_nodate}.
-
-\subsubsection*{Fixedpoint Solver}
-The Fixedpoint solver in Z3 is used for reasoning about recursive definitions and fixed-point computations. 
-It includes a Datalog engine and supports relational algebra and Property Directed Reachability (PDR) algorithms \cite{nikolaj_bjorner_programming_nodate} 
-
-\subsubsection*{NLSat Solver}
-The NLSat solver is specialized for non-linear arithmetic problems. 
-It uses a combination of algebraic methods and SAT-solving techniques to handle polynomial constraints \cite{nikolaj_bjorner_programming_nodate}.
-
-\subsubsection*{SAT Solver}
-The SAT solver in Z3 is designed for propositional logic problems. It uses advanced techniques like in-processing 
-and co-processing to efficiently solve Boolean satisfiability problems \cite{nikolaj_bjorner_programming_nodate}.
-
-\subsubsection*{QSAT Solver}
-The QSAT solver handles quantified Boolean formulas (QBF). It extends the capabilities of the SAT solver to deal with quantifiers, 
-providing solutions for more complex logical problems \cite{nikolaj_bjorner_programming_nodate}.
-
-
-\subsubsection{Tactics}
-Tactics in Z3 are used for preprocessing, formula simplification, and the generation of sub-goals. They
-are essential for decomposing complex problems into relatively simple fragments. The preprocess tactics simplify the input formulae before they are fed into the main solver.
- It can include heuristics such as the propagation of constants, arithmetic simplification, and removal of redundant constraints. The Cube and Conquer tactic is used to split
- the search space into smaller sub-problems. (cubes) that can be solved independently. This is a very useful scheme for parallel solving
-and the sum time required to solve, it greatly shortens. Tacticals are combiners that make the composition of multiple tactics \cite{nikolaj_bjorner_programming_nodate}.
-\subsubsection{Optimization}
-Z3 allows the use of optimization services along with user-defined problems in order to study the satisfiability of the problem while maximizing or minimizing objective functions. This applies to those problems which require solutions that are to be optimized under given constraints \cite{nikolaj_bjorner_programming_nodate}.
 
 \subsubsection{Applications and Example of Z3}
 Software analysis verification and symbolic execution along with software analysis verification rely heavily 
@@ -409,7 +331,7 @@ This example illustrates Z3's theory combination mechanism, which:
 \end{itemize}
 
 This capability makes Z3 particularly useful for software verification, as real-world programs inherently integrate these concepts \cite{nikolaj_bjorner_programming_nodate}.
-\section{Working with \textsc{LiquidHaskell}}
+\section{Working with \textbf{LiquidHaskell}}
 \label{sec:lh}
 In this section, we will explain how \texttt{LiquidHaskell} works.
 \texttt{LiquidHaskell} is available as a GHC plugin. To use it, you need to add its dependencies to the cabal file as following \cite{noauthor_ucsd-progsyslh-plugin-demo_2024}:
