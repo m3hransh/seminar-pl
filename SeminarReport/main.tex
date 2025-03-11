@@ -129,19 +129,11 @@
 
 \section{Introduction}
 \label{sec:introduction}
-Program verification is the process of proving or disproving that a program conforms to its specifications.
-Generally, there are two approaches: \textit{static} and \textit{dynamic} verification.
-Dynamic verification, commonly known as the Test phase, tests program correctness during execution by providing inputs and checking the outputs. 
-This approach is not exhaustive and may not cover all possible inputs.
-In contrast, static verification uses mathematical logic to establish correctness without executing the program.
-This approach includes techniques such as \textit{model checking} and \textit{deductive verification}.
-In deductive verification, the user supplies the program's specifications, and the verifier checks if the program satisfies them \cite{SoftwareVerification2024}.
-
 Two main trends in deductive verifiers are \textit{Satisfiability Modulo Theory} (SMT)-based and \textit{Typed-Theory} (TT)-based approaches. 
 TT-based verifiers leverage type-level computation (normalization) to facilitate principled reasoning about terminating user-defined functions,
-whereas SMT-based verifiers often use SMT solvers to check the satisfiability of universally-quanitified axioms—axioms 
+whereas SMT-based verifiers use, among other tools, SMT solvers to check the satisfiability of universally-quanitified axioms—axioms 
 that encode the semantics of user-defined functions within a specific theory (e.g., linear arithmetic, strings, sets, or bitvectors).
-Refinement types combine the best of both worlds by fusing types with SMT based validity checking \cite{vazou_refinement_2018}.
+Refinement types, and in particular the technique known as Refinement Reflection (see Section \ref {sec:reflection}) combine the best of both worlds by fusing types with SMT based validity checking \cite{vazou_refinement_2018}.
 
 In this report, we focus on \texttt{LiquidHaskell}, a tool that extends Haskell with refinement types.
 After a short overview on refinement types and SMT solvers in section \ref{sec:background}, 
@@ -189,19 +181,16 @@ divide :: n:Nat -> Pos -> Int
 \end{haskell}  
 
 This type signature specifies that the function \texttt{divide} takes a non-negative 
-integer as its first argument and a positive integer as its second argument. 
-The refinement type system then generates \emph{verification conditions} 
-(VCs)—logical formulas whose validity ensures that the type specification is 
-satisfied \cite{vazou_refinement_2014}. 
-When the function is called, the checker verifies that these VCs hold.
+integer as its first argument and a positive integer as its second argument. Consequently, if we call
+\texttt{divide}, the type checker will verify if the specifications meet.
+As an instance, the following function is rejected by the type checker:
 
 \begin{haskell}  
 bad :: Nat -> Nat -> Int 
 bad x y = x `div` y
 \end{haskell} 
-For instance, the checker, based on the type specification, rejects the \texttt{bad} function.
-Before generating any VCs, however, the refinement type system translates the annotation into a so-called
-\textit{subtyping} query as following \cite{vazou_refinement_2014}:
+To be able to verify this, the refinement type system translates the annotation into a so-called
+\textit{subtyping} query as follows \cite{vazou_refinement_2014}:
 
 \begin{equation*}
 \label{eq:subtyping}
@@ -219,6 +208,7 @@ y : \{\,y : \mathrm{Int} \mid y \ge 0\}
 The notation $\Gamma  \vdash \tau_1 \preceq \tau_2$ means that in the type environment $\Gamma$, 
 $\tau_1$ is a subtype of $\tau_2$. The subtype query states, given the type environment in which 
 $x$ and $y$ have type \texttt{Nat}, the type of $y$ should be a subtype of \texttt{divide}'s second parameter $v$ where $v$ is a positive integer.
+Then the typing system translates this query into a verification condition (VC).
 The translation of the subtyping query to VCs is shown in Figure \ref{fig:notation}. Based on this
 translation we would have the following VC:
 
@@ -240,7 +230,12 @@ translation we would have the following VC:
   \label{fig:notation}
 \end{figure}
 
-Refinement type systems are designed to exclude any arbitrary functions and only includes formulas
+This VC is meant to express that, under the environment where x and y are non-negative, 
+the property “if v is non-negative then v is strictly positive" must hold. 
+(This is unsatisfiable since 0 is non-negative but not strictly positive, which is what the verifier 
+should detect for the \texttt{bad} function.)
+
+Refinement type systems are designed to exclude any arbitrary functions and only include formulas
 from decidable logics. These VCs are then passed to an SMT solver to check their satisfiability.
 In this case, the SMT solver would reject the \texttt{bad} function as the VC is unsatisfiable.
 In the next section, we provide a brief introduction to SMT solvers and how they can be used in the context of \texttt{LiquidHaskell}.
@@ -502,6 +497,7 @@ The only thing that is missing is the definition of \textit{len}. Fortunately, t
 reason about them.
 
 \subsection{Lifting Functions to the Refinement Logic}
+\label{sec:reflection}
 When our programs become more complex, we need to define our own functions in the refinement logic and reason about
 a function within another function. Refinement Reflection allows deep specification and verification by 
 reflecting the code implementing a Haskell function into the function’s output refinement type \cite{niki_blog_2016}.
