@@ -177,7 +177,7 @@ respectively. We can use these refinement types to annotate functions with
 preconditions and postconditions. For instance:
 
 \begin{haskell}  
-divide :: n:Nat -> Pos -> Int  
+divide :: Nat -> Pos -> Int  
 \end{haskell}  
 
 This type signature specifies that the function \texttt{divide} takes a non-negative 
@@ -208,7 +208,8 @@ y : \{\,y : \mathrm{Int} \mid y \ge 0\}
 The notation $\Gamma  \vdash \tau_1 \preceq \tau_2$ means that in the type environment $\Gamma$, 
 $\tau_1$ is a subtype of $\tau_2$. The subtype query states, given the type environment in which 
 $x$ and $y$ have type \texttt{Nat}, the type of $y$ should be a subtype of \texttt{divide}'s second parameter $v$ where $v$ is a positive integer.
-Then the typing system translates this query into a verification condition (VC).
+Then the typing system translates this query into a verification condition (VC)- logical formulas whose validity ensures that the type
+specification is satisfied \cite{vazou_refinement_2014}.
 The translation of the subtyping query to VCs is shown in Figure \ref{fig:notation}. Based on this
 translation we would have the following VC:
 
@@ -232,41 +233,36 @@ translation we would have the following VC:
 
 This VC is meant to express that, under the environment where x and y are non-negative, 
 the property “if v is non-negative then v is strictly positive" must hold. 
-(This is unsatisfiable since 0 is non-negative but not strictly positive, which is what the verifier 
-should detect for the \texttt{bad} function.)
+This is unsatisfiable since 0 is non-negative but not strictly positive, which is what the verifier 
+should detect for the \texttt{bad} function.
 
 Refinement type systems are designed to exclude any arbitrary functions and only include formulas
-from decidable logics. These VCs are then passed to an SMT solver to check their satisfiability.
+from decidable logics\cite{vazou_refinement_2014}. These VCs are then passed to an SMT solver to check their satisfiability.
 In this case, the SMT solver would reject the \texttt{bad} function as the VC is unsatisfiable.
 In the next section, we provide a brief introduction to SMT solvers and how they can be used in the context of \texttt{LiquidHaskell}.
 
 \subsection{SMT Solvers}
-SMT (Satisfiability Modulo Theories) solvers are tools that can check the satisfiability of logical formulas in a specific theory.
-SMT solvers extend the concept of SAT solvers by adding theories (e.g., the theory of equality, 
-of integer numbers, of real numbers, of arrays, of lists, and so on) to the boolean logic \cite{clarke_satisfiability_2018}.
-While SAT solvers can only check the satisfiability of Boolean formulas, SMT solvers can check the satisfiability of formulas 
-that contain variables from different theories. 
-As an example, consider the following formula:
-
+SAT solvers are designed to determine the satisfiability of Boolean formulas\cite{clarke_satisfiability_2018}. 
+For example, consider the following formula that is intended to be solved by SAT solvers::
 \begin{equation}
   \varphi = (x \lor y) \land (\lnot x \lor z)
 \end{equation}
 
-An SAT solver can check the satisfiability of the formula \(\varphi\) by checking if there is an assignment for the variables \(x, y, z\).
-For instance, \(x = true, y = false, z = true\) is an assignment that makes \(\varphi\) \(true\). 
+A SAT solver can check the satisfiability of the formula \(\varphi\) by checking if there is an assignment to the variables 
+\(x, y, z\) such that the statement evaluates to \(true\).
+For instance, the assignment \(x = true, y = false, z = true\) satisfies the formula \(\varphi\).
 
-On the other hand, SMT solvers can check the satisfiability of formulas that contain variables that require arithmetic theory as the following formula:
+SMT solvers extend SAT solvers by incorporating additional theories—such as equality, integer arithmetic, real arithmetic, 
+arrays, and lists—into Boolean logic \cite{clarke_satisfiability_2018}.
+As an example, consider the following formula that contains variables that require arithmetic theory:
 
 \begin{equation}
-  x + y \leq 10 \quad and \quad x = y - 7
+  x + y \leq 10 \quad \land \quad x = y - 7
 \end{equation}
 
+In the following section, we take a closer look at the Z3 SMT solver through some examples.
 \subsubsection{Applications and Example of Z3}
-Software analysis verification and symbolic execution along with software analysis verification rely heavily 
-on making use of the Z3 platform. Z3 operates through SMT-LIB2 scripts as well as program application interfaces 
-using Python, C++, and OCaml. Z3 users prefer the Python API because of its 
-straightforward nature and SMT-LIB2 stands out for presenting logical problems with predefined 
-logic including arithmetic, arrays, and bit-vectors.
+
 \vspace{1em}
 
 Consider the satisfiability problem \ref{eq:example-sat} involving three clauses. 
