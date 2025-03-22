@@ -131,12 +131,12 @@
 \label{sec:introduction}
 Two main trends in deductive verifiers are \textit{Satisfiability Modulo Theory} (SMT)-based and \textit{Typed-Theory} (TT)-based approaches. 
 TT-based verifiers leverage type-level computation (normalization) to facilitate principled reasoning about terminating user-defined functions,
-whereas SMT-based verifiers use, among other tools, SMT solvers to check the satisfiability of universally-quanitified axioms—axioms 
+whereas SMT-based verifiers use, among other tools, SMT solvers to check the satisfiability of universally-quantified axioms—axioms 
 that encode the semantics of user-defined functions within a specific theory (e.g., linear arithmetic, strings, sets, or bitvectors).
 Refinement types, and in particular the technique known as Refinement Reflection (see Section \ref {sec:reflection}) combine the best of both worlds by fusing types with SMT based validity checking \cite{vazou_refinement_2018}.
 
 In this report, we focus on \texttt{LiquidHaskell}, a tool that extends Haskell with refinement types.
-After a short overview on refinement types and SMT solvers in section \ref{sec:background}, 
+After a short overview of refinement types and SMT solvers in section \ref{sec:background}, 
 we explain \texttt{LiquidHaskell}'s features in section \ref{sec:lh}. Then, in section \ref{sec:example}, we provide an example of verifying \texttt{Insertion Sort}. 
 Finally in section \ref{sec:conclusions} we 
 discuss the limitations of \texttt{LiquidHaskell} and compare it with other tools.
@@ -183,7 +183,7 @@ divide :: Nat -> Pos -> Int
 This type signature specifies that the function \texttt{divide} takes a non-negative 
 integer as its first argument and a positive integer as its second argument. Consequently, if we call
 \texttt{divide}, the type checker will verify if the specifications meet.
-As an instance, the following function is rejected by the type checker:
+For instance, the following function is rejected by the type checker:
 
 \begin{haskell}  
 bad :: Nat -> Nat -> Int 
@@ -208,7 +208,7 @@ y : \{\,y : \mathrm{Int} \mid y \ge 0\}
 The notation $\Gamma  \vdash \tau_1 \preceq \tau_2$ means that in the type environment $\Gamma$, 
 $\tau_1$ is a subtype of $\tau_2$. The subtype query states, given the type environment in which 
 $x$ and $y$ have type \texttt{Nat}, the type of $y$ should be a subtype of \texttt{divide}'s second parameter $v$ where $v$ is a positive integer.
-Then the typing system translates this query into a verification condition (VC)- logical formulas whose validity ensures that the type
+The type system then translates this query into a verification condition (VC)- logical formulas whose validity ensures that the type
 specification is satisfied \cite{vazou_refinement_2014}.
 The translation of the subtyping query to VCs is shown in Figure \ref{fig:notation}. Based on this
 translation we would have the following VC:
@@ -239,11 +239,12 @@ should detect for the \texttt{bad} function.
 Refinement type systems are designed to exclude any arbitrary functions and only include formulas
 from decidable logics\cite{vazou_refinement_2014}. These VCs are then passed to an SMT solver to check their satisfiability.
 In this case, the SMT solver would reject the \texttt{bad} function as the VC is unsatisfiable.
-In the next section, we provide a brief introduction to SMT solvers and how they can be used in the context of \texttt{LiquidHaskell}.
+In the next section, we provide a brief introduction to SMT solvers and how they can be used in 
+the context of \texttt{LiquidHaskell}.
 
 \subsection{SMT Solvers}
 SAT solvers are designed to determine the satisfiability of Boolean formulas\cite{clarke_satisfiability_2018}. 
-For example, consider the following formula that is intended to be solved by SAT solvers::
+For example, consider the following formula that is intended to be solved by SAT solvers:
 \begin{equation}
   \varphi = (x \lor y) \land (\lnot x \lor z)
 \end{equation}
@@ -254,41 +255,77 @@ For instance, the assignment \(x = true, y = false, z = true\) satisfies the for
 
 SMT solvers extend SAT solvers by incorporating additional theories—such as equality, integer arithmetic, real arithmetic, 
 arrays, and lists—into Boolean logic \cite{clarke_satisfiability_2018}.
-As an example, consider the following formula that contains variables that require arithmetic theory:
+As an example, consider the following formula that contains variables requiring arithmetic reasoning:
 
 \begin{equation}
   x + y \leq 10 \quad \land \quad x = y - 7
 \end{equation}
 
-In the following section, we take a closer look at the Z3 SMT solver through some examples.
-\subsubsection{Applications and Example of Z3}
+
+\texttt{LiquidHaskell} uses SMT solvers to check the satisfiability of verification conditions (VCs) generated from refinement types.  
+In the following section, we take a closer look at the Z3 SMT solver through some illustrative examples.
+
+\subsubsection{Applications and Examples of Z3}
+
+Z3 is a powerful SMT solver equipped with specialized algorithms for solving background theories such as linear arithmetic, bit-vectors, and arrays. It allows users to express constraints using the SMT-LIB2 language, which is the standard input format for SMT solvers. Additionally, Z3 provides APIs for a variety of programming languages, including Python, C++, Haskell, and Java~\cite{nikolaj_bjorner_programming_nodate}.
+
+To use \texttt{LiquidHaskell}, at least one of the SMT solvers it supports must be installed—namely, Z3, CVC4, or MathSat. Among these, Z3 is the most thoroughly tested and widely used with \texttt{LiquidHaskell}~\cite{jhala_programming_2020}.
+
+To demonstrate Z3's capabilities, we will express and solve a simple satisfiability problem using both \texttt{SMT-LIB2} and Python.
+Consider the following SAT problem (Equation~\ref{eq:example-sat}) involving three clauses.  
+We aim to determine whether there exists an assignment of Boolean values to \( \mathit{Tie} \) and \( \mathit{Shirt} \) such that the formula holds:
+
+\vspace{1em}
+\begin{equation}
+  \label{eq:example-sat}
+  (\mathit{Tie} \lor \mathit{Shirt}) \land (\lnot \mathit{Tie} \lor \mathit{Shirt}) \land (\lnot \mathit{Tie} \lor \lnot \mathit{Shirt})
+\end{equation}
+
+This formula can be expressed in \texttt{SMT-LIB2} as follows:
+
+\begin{lstlisting}[language=lisp, label={lst:smtlib2}]
+(set-logic QF_UF)
+(declare-const Tie Bool)
+(declare-const Shirt Bool)
+
+(assert (or Tie Shirt))
+(assert (or (not Tie) Shirt))
+(assert (or (not Tie) (not Shirt)))
+
+(check-sat)
+(get-model)
+\end{lstlisting}
 
 \vspace{1em}
 
-Consider the satisfiability problem \ref{eq:example-sat} involving three clauses. 
-We aim to determine whether there exists an assignment of Boolean variables Tie and Shirt such that the conjunction of the following clauses holds:
+This \texttt{SMT-LIB2} script sets up the problem, declares the variables, asserts the constraints, checks for satisfiability, 
+and retrieves the model.
+Alternatively, we can use Z3’s Python API to express and solve the same problem programmatically:
 
-\begin{equation}
-  \label{eq:example-sat}
-  (Tie \lor Shirt) \land (\lnot Tie \lor Shirt) \land (\lnot Tie \lor \lnot Shirt)
-\end{equation}
+\begin{lstlisting}[language=Python, label={lst:z3python}]
+from z3 import *
 
-Formula \ref{eq:example-sat}  can be solved in SMTLIB2 as the following code:
+Tie = Bool('Tie')
+Shirt = Bool('Shirt')
+clauses = [
+    Or(Tie, Shirt),
+    Or(Not(Tie), Shirt),
+    Or(Not(Tie), Not(Shirt))
+]
 
-\begin{figure}[ht]
-  \begin{lstlisting} [language=SMTlIB2]
-    (set-logic QF_UF)
-    (declare-const Tie Bool)
-    (declare-const Shirt Bool)
-    (assert (or Tie Shirt))
-    (assert (or (not Tie) Shirt))
-    (assert (or (not Tie) (not Shirt)))
-    (check-sat)
-    (get-model)
-  \end{lstlisting}
-  \end{figure}
+solver = Solver()
+solver.add(clauses)
 
-  When we run this, Z3 responds:
+if solver.check() == sat:
+    print("Satisfiable")
+    print(solver.model())
+else:
+    print("Unsatisfiable")
+\end{lstlisting}
+
+\vspace{1em}
+
+When we run this, Z3 responds:
 \begin{lstlisting} [language=SMTlIB2]
  sat
  (model
@@ -298,34 +335,10 @@ Formula \ref{eq:example-sat}  can be solved in SMTLIB2 as the following code:
 \end{lstlisting}
 \vspace{1em}
 
-  This SMT-LIB2 script sets up the problem, declares the variables, asserts the constraints, checks for satisfiability, and retrieves the model, just like the Python code does for Formula \ref{eq:example-sat}  with z3 in the following example.
 
-\begin{figure}[ht]
-\begin{lstlisting}[language=Python]
-  from z3 import Bools, Solver, Or, Not
-  Tie, Shirt = Bools('Tie Shirt')
-  s = Solver()
-  s.add(Or(Tie, Shirt),
-        Or(Not(Tie), Shirt),
-        Or(Not(Tie), Not(Shirt)))
-  print(s.check())
-  print(s.model())
-\end{lstlisting}
-\end{figure}
-
-\vspace{1em}
-The output of the code is:
-\begin{lstlisting}[language=Python]
-sat
-
-[Tie = False, Shirt = True]
-\end{lstlisting}
-\vspace{1em}
-
-
-When calling s.check(), the solver determines that the assertions are satisfiable
- (sat)—meaning there is a way to assign values to the Tie and Shirt that make all the 
-conditions true. One possible solution is Tie = false and Shirt = true, which can be retrieved using s.model().
+When calling \texttt{solver.check()}, the solver determines that the assertions are satisfiable
+(sat)—meaning there is a way to assign values to the \(Tie\) and \(Shirt\) that make all the 
+conditions true. One possible solution is \(Tie = false\) and \(Shirt = true\), which can be retrieved using \texttt{solver.model()}.
 \vspace{1em}
 
 
@@ -333,7 +346,15 @@ conditions true. One possible solution is Tie = false and Shirt = true, which ca
 The next example shows how Z3 reasons across multiple mathematical theories such as array theory, arithmetic, and uninterpreted functions. Z3's API analyzes the following Python snippet:
 
 
-\begin{lstlisting}[language=Python]
+\subsubsection{Combining Theories in Z3}
+
+A key feature of modern SMT solvers such as Z3 is their ability to reason across multiple logical theories simultaneously. 
+This capability is critical in software verification tasks, where properties of programs often involve 
+arithmetic constraints, memory access patterns, and abstract functions. 
+The following example demonstrates Z3’s theory combination mechanism through a small but non-trivial 
+constraint involving linear arithmetic, arrays, and uninterpreted functions \cite{nikolaj_bjorner_programming_nodate}.
+
+\begin{lstlisting}[language=Python, label={lst:combined-theories}]
 Z = IntSort()
 f = Function('f', Z, Z)
 x, y, z = Ints('x y z')
@@ -341,40 +362,33 @@ A = Array('A', Z, Z)
 fml = Implies(x + 2 == y, f(Store(A, x, 3)[y - 2]) == f(y - x + 1))
 solve(Not(fml))
 
-unsat
 \end{lstlisting}
-
 \vspace{1em}
 
+The code above encodes a formula in Z3’s Python API and checks whether its negation is satisfiable. The solver returns \texttt{unsat}, indicating that the negated formula is not satisfiable, and therefore the original implication holds in all models. This deduction results from Z3’s ability to simultaneously reason within and across several background theories.
 
-The integrated theories enabling this reasoning are:
+First, the theory of \emph{Linear Integer Arithmetic (LIA)} governs constraints such as \(x + 2 = y\) and expressions like \(y - x + 1\), which appear in both the antecedent and consequent of the implication. This theory enables Z3 to reason about numeric relationships and preserve equality propagation across expressions.
 
-\begin{itemize}
-    \item \textbf{Linear Integer Arithmetic (LIA)}: Handles integer constraints:
-    \begin{equation*}
-        x + 2 = y \quad \text{and} \quad y - x + 1
-    \end{equation*}
-    
-    \item \textbf{Array Theory}: Manages array operations through \texttt{Store} and select operators:
-    \begin{equation*}
-        \texttt{Store}(A, x, 3)[y - 2] \equiv \text{ite}(y - 2 = x, 3, A[y - 2])
-    \end{equation*}
-    where \text{ite} denotes the if-then-else operator.
-    
-    \item \textbf{Uninterpreted Functions}: Treats function $f$ as a black box respecting functional consistency:
-    \begin{equation*}
-        \forall a, b: (a = b) \implies (f(a) = f(b))
-    \end{equation*}
-\end{itemize}
+Second, the formula involves an array operation: \texttt{Store}(A, x, 3)[y - 2]. In Z3’s semantics, this corresponds to a functional update of array \(A\) at index \(x\), followed by a read at index \(y - 2\). The semantics of the \texttt{Store} and \texttt{Select} operators are formally defined using a conditional expression:
+\[
+    \texttt{Store}(A, x, 3)[y - 2] \equiv 
+    \begin{cases}
+    3 & \text{if } y - 2 = x \\
+    A[y - 2] & \text{otherwise}
+    \end{cases}
+\]
+This is expressed in Z3 using the \texttt{ite} operator, short for \emph{if-then-else}.
 
-This example illustrates Z3's theory combination mechanism, which:
-\begin{itemize}
-    \item Ensures coherence across different mathematical domains
-    \item Handles cross-theory constraints (e.g., array indices as arithmetic expressions)
-    \item Enables verification of systems with mixed abstractions (memory, arithmetic, and black-box components)
-\end{itemize}
+Finally, the function symbol \(f\) is treated as an \emph{uninterpreted function}—that is, a function with no specific definition, but one which satisfies the axiom of functional congruence: for all \(a\) and \(b\), if \(a = b\) then \(f(a) = f(b)\). This allows Z3 to perform symbolic reasoning on applications of \(f\), relying solely on equality relationships between its arguments.
 
-This capability makes Z3 particularly useful for software verification, as real-world programs inherently integrate these concepts \cite{nikolaj_bjorner_programming_nodate}.
+What makes this example particularly illustrative is that the solver must combine these theories coherently. The antecedent provides a numeric constraint \(x + 2 = y\), which is used to simplify the expression \(y - 2 = x\) and resolve the result of the array access. This index then determines the value passed to the function \(f\), which is subsequently compared to another function application involving arithmetic. Through this process, Z3 propagates equalities, evaluates array expressions, and applies congruence rules for uninterpreted functions—eventually concluding that the equality in the implication must hold.
+
+
+
+This example highlights Z3's ability to reason across multiple logical domains in a unified manner. By combining arithmetic reasoning, memory modeling via arrays, and abstraction through uninterpreted functions, Z3 is able to resolve complex constraints that arise in software analysis. Such theory combination is especially valuable in verifying real-world programs, where data structures, numeric computations, and abstract logic often interact in nontrivial ways.
+
+In the following section, we explore how this kind of logical reasoning is applied in practice using \texttt{LiquidHaskell}.
+\texttt{LiquidHaskell} allows programmers to embed logical properties directly into type annotations, and automatically verifies them using the same kind of background theories we have just examined. We begin by showing how to set up \texttt{LiquidHaskell} in a Haskell project and introduce its key verification features.
 \section{Working with \textbf{LiquidHaskell}}
 \label{sec:lh}
 In this section, we will explain how \texttt{LiquidHaskell} works.
