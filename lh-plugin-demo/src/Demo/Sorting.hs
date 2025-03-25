@@ -22,8 +22,8 @@ bag (Cons x xs) = B.put x (bag xs)
 singelton :: (Ord a) => a -> B.Bag a
 singelton x = B.put x (B.empty)
 
-{-@ equalBag :: { bag(Cons 1 (Cons 3 Emp)) ==  (bag( Cons 2 Emp)) } @-}
-equalBag = ()
+-- {-@ equalBag :: { bag(Cons 1 (Cons 3 Emp)) ==  (bag( Cons 2 Emp)) } @-}
+-- equalBag = ()
 
 {-@ reflect isSorted @-}
 isSorted :: (Ord a) => List a -> Bool

@@ -325,7 +325,7 @@ else:
 
 \vspace{1em}
 
-When we run this, Z3 responds:
+When we run code fragment written in \texttt{SMT-LIB2}, Z3 responds:
 \begin{lstlisting} [language=SMTlIB2]
  sat
  (model
@@ -340,10 +340,6 @@ When calling \texttt{solver.check()}, the solver determines that the assertions 
 (sat)—meaning there is a way to assign values to the \(Tie\) and \(Shirt\) that make all the 
 conditions true. One possible solution is \(Tie = false\) and \(Shirt = true\), which can be retrieved using \texttt{solver.model()}.
 \vspace{1em}
-
-
-
-The next example shows how Z3 reasons across multiple mathematical theories such as array theory, arithmetic, and uninterpreted functions. Z3's API analyzes the following Python snippet:
 
 
 \subsubsection{Combining Theories in Z3}
@@ -391,8 +387,8 @@ In the following section, we explore how this kind of logical reasoning is appli
 \texttt{LiquidHaskell} allows programmers to embed logical properties directly into type annotations, and automatically verifies them using the same kind of background theories we have just examined. We begin by showing how to set up \texttt{LiquidHaskell} in a Haskell project and introduce its key verification features.
 \section{Working with \textbf{LiquidHaskell}}
 \label{sec:lh}
-In this section, we will explain how \texttt{LiquidHaskell} works.
-\texttt{LiquidHaskell} is available as a GHC plugin. To use it, you need to add its dependencies to the cabal file as following \cite{noauthor_ucsd-progsyslh-plugin-demo_2024}:
+In this section, we will explain how to work with \texttt{LiquidHaskell}.
+\texttt{LiquidHaskell} is available as a GHC plugin. To use it in your Haskell project, you need to add its dependencies to cabal file as following \cite{noauthor_ucsd-progsyslh-plugin-demo_2024}:
 
 \vspace{1em}
 \begin{lstlisting}
@@ -415,26 +411,27 @@ In this section, we will explain how \texttt{LiquidHaskell} works.
 \vspace{1em}
 
 With these dependencies, \texttt{LiquidHaskell} can check your program at compile time or through a code linter in your preferred IDE.  
-Note that there are options such as \texttt{---reflection} and \texttt{---ple}, which enable reflection and Proof by Logical Evaluation (PLE) in \texttt{LiquidHaskell}.  
-You can either add them as plugin options in the Cabal file or use them directly in the source code as follows:  
 
-\begin{haskell}  
-{-@ LIQUID "--reflection" @-}  
-{-@ LIQUID "--ple" @-}  
-\end{haskell}  
-
-In the following sections, we will use both options, so we do not include them explicitly in the code snippets. 
 
 \subsection{Type Refinement}
-Refinement types allow constraints to be placed on variables by adding predicates to their types
-\cite{jhala_programming_2020}. For example, we can define natural numbers as follows:
+As mentioned in Section \ref{sec:background}, refinement types are types that extend the expressiveness 
+of type system by providing predicates that can specify invariants of the program.
+
+\texttt{LiquidHaskell} uses Logically Qualified Data Types (Liquid Types) \cite{rondonLiquidTypes2008}, 
+with some modifications to ensure soundness under lazy evaluation, to specify these refinements in 
+Haskell \cite{vazou_refinement_2014}.
+
+It ensures that type checking remains decidable and efficient by generating verification conditions (VCs) 
+that are both decidable and efficiently solvable by SMT solvers \cite{vazou_refinement_2014}.
+
+The Liquid type annotations are provided by the programmer in the source file as Haskell comments. Consider the following example:
 
 \begin{haskell}
  {-@ type Nat = {v:Int | 0 <= v} @-}
 \end{haskell}
 
-Now if you configure your IDE to use Haskell LSP, it will show the following error if you try to assign a negative number
-to a variable of type Nat.
+If you configure your IDE to use the Haskell LSP, it will display the following error if you attempt to assign a negative 
+number to a variable of type \texttt{Nat}:
 
 \begin{haskell}
  {-@ x :: Nat @-}
@@ -442,8 +439,7 @@ to a variable of type Nat.
  >>> typecheck: Liquid Type Mismatch
    .
    The inferred type
-     VV : {v : GHC.Types.Int | v == GHC.Num.negate (GHC.Types.I# 1)
-                               && v == (-GHC.Types.I# 1)}
+     VV : {v : GHC.Types.Int | v == GHC.Num.negate (GHC.Types.I# 1)}
    .
    is not a subtype of the required type
      VV : {VV##493 : GHC.Types.Int | VV##493 >= 0}
@@ -451,7 +447,42 @@ to a variable of type Nat.
    Constraint id 2
 \end{haskell}
 
-The error message shows that the inferred type of the variable x is not a subtype of the required type.
+The error message indicates that the inferred type of the variable \texttt{x} is not a subtype of the 
+required type. \texttt{LiquidHaskell} employs liquid typing rules—including the subtyping rule 
+discussed in Section \ref{sec:background}—to infer these types.
+
+Particularly, in \texttt{LiquidHaskell}, integers and other constants (e.g., booleans, character, etc.) are given a
+singleton type, meaning a type that has only one value \cite{niki_lecture_2024}. For instance, the liquid typing rule for integers is:
+
+\[
+\frac{
+}{
+\Gamma \vdash i: \{Int \mid v = i\}
+} 
+\quad (\mathit{T-Int})
+\]
+
+Combined with the following subtyping rule:
+
+\[
+\frac{
+ \Gamma \vdash e: \tau_1  \quad \Gamma  \vdash \tau_1 \preceq \tau_2
+}{
+ \Gamma \vdash e: \tau_2 
+}
+\quad (\mathit{SUBTYPE})
+\]
+
+Refinement type checker, based on the \(\mathit{T-Int}\) rule, expects that expression \(-1\) should have type \(\{Int \mid v = -1\}\) 
+and then it should be a subtype of Nat type (assignment to variable of type Nat). 
+According to the translation of the subtyping query into verification conditions (see Figure \ref{eq:subtyping-vc}), 
+the type checker generates the following VC:
+\[ -1 = v \Rightarrow v \geq 0  \] 
+which in turn the SMT sovler finds unsatisfiable.
+
+
+
+\subsection{Function Types}
 
 Refinement types allow defining function preconditions and postconditions\cite{jhala_programming_2020}. 
 For example, consider the following function:
@@ -463,24 +494,49 @@ For example, consider the following function:
 \end{haskell}
 
 The function defined above is a partial function because it does not handle the case when the list is empty. 
- Typical Haskell types only allow the introduction of the Maybe type, which postpones error 
- handling to another part of the program \cite{jhala_programming_2020}. Using refinement types, we can define the type of tail function as follows:
+Typical Haskell types allow the introduction of the \texttt{Maybe} type to loosen the output type or probably using more stronger type for input
+such as \texttt{NonEmpty} for making the function total.  
+The former approach, postpone handling to another part of the program \cite{jhala_programming_2020}, while the second approach
+needs the user introduce handling of empty list at some point earlier in the program.
+Using refinement types, we can define the type of tail function as follows:
 
 \begin{haskell}
- {-@ tail :: {v:[a] | 0 < len v} -> a @-}
+{-@ tail :: {v:[a] | 0 < len v} -> [a] @-}
  tail :: [a] -> [a]
  tail (x:_) = x
 \end{haskell}
 
-Now, our function is total, as it does not allow an empty list to be passed to \texttt{tail}.
+This type definition specifies that the input list should have a length greater than zero.
+\texttt{len} is a special function that is defined in the refinement logic and returns the length of the list.
+In the Section \ref{sec:reflection}, we will show how to define and use user-defined functions in the refinement logic.
+\texttt{LiquidHaskell} will check this condition at compile time and issue an error if the condition is not met.
+Consider the following example:
+\begin{haskell}
+x = tail []
+\end{haskell}
+\texttt{LiquidHaskell} check that the type 
+\begin{equation*}
+  \{v : [a] \mid v == \text{GHC.Types.[ ]}\quad \&\& \text{ len } v == 0 \quad \&\&  \text{ len } v >= 0\}
+\end{equation*}
+is a subtype of the required type 
 
+\begin{equation*}
+  \{v : [a] \mid  \text{ len } v > 0\}
+\end{equation*}
+and issue an error if the condition is not met. However, in some cases  
+like following the refinement checker can not verify the function call
+and give an error:
 \begin{haskell}
  x :: [Int]
  x = tail (tail [1, 2])
 \end{haskell}
 
-When calling functions, \texttt{LiquidHaskell} won't look into the body of the function to see if the first application of the \textit{tail} gives the valid non-empty list to the second \textit{tail}.
-To allow \texttt{LiquidHaskell} consider the above example as safe, we need to also specify the post-condition for our function as following:
+When checking the function call, \texttt{LiquidHaskell} doesn't 
+look into the body of the function to see if the first application 
+of the \textit{tail} gives the valid non-empty list to the second \textit{tail}.
+To allow \texttt{LiquidHaskell} consider the above example as safe, 
+we need to also specify the post-condition for our function as following:
+
 
 \begin{haskell}
  {-@ tail :: xs: {v:[a] | 0 < len v} -> {v:[a] | len v == len xs - 1} @-}
@@ -488,6 +544,8 @@ To allow \texttt{LiquidHaskell} consider the above example as safe, we need to a
  tail (x:_) = x
 \end{haskell}
 
+This way, \texttt{LiquidHaskell} can reason about the output of the functions as well
+and gives more information to information to the type checker to work with.
 \subsection{Refined Data Types}
 In the above examples, we saw how refinements of input and output of function allow us to have stronger arguments about our program. 
 We can take this further by refining the data types. Consider the following example \cite{jhala_programming_2020}:
@@ -593,8 +651,7 @@ assoc [] ys zs =
     *** QED
 
 assoc (x : xs) ys zs =
-  ((x : xs) ++ ys)
-    ++ zs
+  ((x : xs) ++ ys) ++ zs
     ===  x : (xs ++ ys) ++ zs
     === x
     : ((xs ++ ys) ++ zs)
@@ -636,10 +693,8 @@ and the \texttt{insertSort} function, which recursively sorts the input list. Be
 
 module InsertionSort where
 
--- Define the List type
 data List a = Nil | Cons a (List a) deriving (Eq, Show)
 
--- Insert operation
 {-@ reflect insert @-}
 insert :: (Ord a) => a -> List a -> List a
 insert x Nil = Cons x Nil
@@ -647,7 +702,6 @@ insert x (Cons y ys)
   | x <= y    = Cons x (Cons y ys)
   | otherwise = Cons y (insert x ys)
 
--- Insertion Sort operation
 {-@ reflect insertSort @-}
 insertSort :: (Ord a) => List a -> List a
 insertSort Nil = Nil
@@ -656,7 +710,7 @@ insertSort (Cons x xs) = insert x (insertSort xs)
 
 \subsection{Specification}
 
-To verify the correctness of the insertion sort, we define specifications that ensure the following:
+To verify the correctness of insertion sort, we define specifications that ensure the following:
 1. The output list is sorted.
 2. The output list is a permutation of the input list.
 
@@ -681,7 +735,8 @@ The \texttt{isSorted} function is then used to specify and verify the correctnes
 The \texttt{insert} function places an element into a sorted list while maintaining its sortedness:
 
 \begin{haskell}
-{-@ insert :: x:_ -> {xs:_ | isSorted xs} -> {ys:_ | isSorted ys} @-}
+{-@ insert :: x:_ -> {xs:_ | isSorted xs} 
+  -> {ys:_ | isSorted ys && Map_union (singleton x) (bag xs) == bag ys  } @-}
 \end{haskell}
 
 \subsubsection{Insertion Sort Specification}
@@ -713,7 +768,7 @@ Then with the use of \texttt{withProof}, we can use the lemma to prove the corre
 \begin{haskell}
 {-@ reflect insert @-}
 {-@ insert :: x:_ -> {xs:_ | isSorted xs} 
-  -> {ys:_ | isSorted ys && Map_union (singelton x) (bag xs) == bag ys  } @-}
+  -> {ys:_ | isSorted ys && Map_union (singleton x) (bag xs) == bag ys  } @-}
 insert :: (Ord a) => a -> List a -> List a
 insert x Nil = Cons x Nil
 insert x (Cons y ys)
@@ -736,63 +791,7 @@ insertSort (Cons x xs) = insert x (insertSort xs)
 By verifying these properties using \texttt{LiquidHaskell}, we ensure that insertion 
 sort is functionally correct and meets the desired specifications.
 
-\section{Conclusions, Results, Discussion}
-\texttt{LiquidHaskell}, enhanced with \textbf{Refinement Reflection} and \textbf{Proof by Logical Evaluation (PLE)}, 
-combines the strengths of SMT-based and Type Theory (TT)-based verification approaches. It allows programmers to verify program correctness 
-by leveraging a combination of refinement types, code reflection, and automated proof search \cite{vazou_refinement_2018}.
-
-\subsection*{Core Concepts}
-
-\begin{itemize}
-  \item \textbf{Refinement Types}: \texttt{LiquidHaskell} uses refinement types to specify program properties, 
-        extending basic types with logical predicates drawn from an SMT-decidable logic.
-    \item \textbf{Refinement Reflection}: The implementation of a user-defined function is reflected in
-      its output refinement type. This converts the function's type signature into a precise description of the function's behavior. 
-      At uses of the function, the definition is instantiated in the SMT logic \cite{vazou_refinement_2018}.
-   \item \textbf{Propositions as Types}: Proofs are written as regular Haskell programs, 
-     utilizing the Curry-Howard isomorphism. This allows programmers to use language mechanisms 
-     like branching, recursion, and auxiliary functions to construct proofs \cite{vazou_refinement_2018}.
-   \item \textbf{Proof by Logical Evaluation (PLE)}: PLE is a proof-search algorithm that automates 
-     equational reasoning. It mimics type-level computation within SMT-logics by representing 
-     functions in a guarded form and repeatedly unfolding function application terms by instantiating them 
-     with their definition corresponding to an enabled guard \cite{vazou_refinement_2018}.
-\end{itemize}
-
-\subsection*{Comparison with Type Theory (TT) Based Systems}
-
-\begin{itemize}
-    \item \textbf{Type-Level Computation}: TT-based provers use type-level computation (normalization) 
-      for reasoning about user-defined functions, often requiring explicit lemmas or rewrite hints.
-    \item \textbf{Automation}: \texttt{LiquidHaskell} uses PLE to automate equational reasoning 
-      without explicit lemmas, by emulating type-level computation within SMT logic. 
-     \item  \textbf{Proof Style}: Proofs in \texttt{LiquidHaskell} are written as Haskell programs.
-    \item  \textbf{SMT Integration}: \texttt{LiquidHaskell} uses SMT solvers for decidable theories, 
-        while TT-based systems often require users to handle these proofs manually.
-    \item \textbf{Expressiveness}: Both systems can express sophisticated proofs. \texttt{LiquidHaskell} is shown 
-      to be able to express any natural deduction proof \cite{vazou_refinement_2018}.
-   \item \textbf{Practicality}: \texttt{LiquidHaskell} reuses an existing language and its ecosystem, 
-     allowing proofs and programs to be written in the same language. 
-\end{itemize}
-
-\subsection*{Comparison with Other SMT-Based Verifiers}
-\begin{itemize}
-    \item \textbf{Axiomatization}: Existing SMT-based verifiers such as Dafny use axioms to encode user-defined functions 
-        which can lead to incomplete verification and matching loops. \texttt{LiquidHaskell}, uses refinement 
-        reflection to encode functions, along with PLE for complete and terminating verification \cite{vazou_refinement_2018}.
-    \item \textbf{Fuel Parameter}: Dafny and F* use a fuel parameter to limit the instantiation of axioms which can lead 
-      to incompleteness \cite{vazou_refinement_2018}. PLE does not require any fuel parameter and is guaranteed to terminate.
-\end{itemize}
-
-\subsection*{Limitations}
-
-\begin{itemize}
-    \item \textbf{Debugging}: The increased automation can make it harder to debug failed proofs.
-    \item \textbf{Interactivity}: \texttt{LiquidHaskell} lacks strong interactivity, unlike theorem provers with tactics and scripts.
-    \item \textbf{Certificates}: It does not produce easily checkable certificates, unlike theorem provers \cite{vazou_refinement_2018}.
-    \item \textbf{Reflection Limitations}: Not all Haskell functions can be reflected into logic due to soundness or implementation constraints \cite{vazou_refinement_2018}.
-\end{itemize}
-
-\subsection*{Conclusion}
+\section{Conclusions}
 
 \texttt{LiquidHaskell} combines refinement types, code reflection, and PLE to offer a practical approach to program verification within an existing language. By leveraging SMT solvers for decidable theories and PLE to automate equational reasoning, \texttt{LiquidHaskell} aims to simplify the process of verifying program correctness when compared to other tools.
 \label{sec:conclusions}
@@ -804,8 +803,7 @@ documentation provided the foundation for this work.
 Additionally, we acknowledge the use of AI-assisted tools throughout the preparation of this report. 
 GitHub Copilot was employed for minor rewording and auto-completion in code snippets, 
 helping streamline the coding process. For better comprehension of academic papers and extracting key information, 
-we leveraged ChatGPT and NotebookLM. These tools assist in synthesizing complex concepts and structuring 
-our explanations more effectively. 
+we leveraged ChatGPT and NotebookLM. ChatGPT was especially usefull finding grammatical errors and suggesting improvements in the text.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
 \nocite{*}

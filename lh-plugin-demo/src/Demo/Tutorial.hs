@@ -2,10 +2,15 @@
 {-@ LIQUID "--ple" @-}
 module Demo.Tutorial where
 
-{-@ tail' :: xs: {v:[a] | 0 < len v} -> {v:[a] | len v == len xs - 1} @-}
+{-@ ex1 :: {x : Int | x > 2 } @-}
+ex1 :: Int
+ex1 = 1
+
+{-@ tail' :: xs: {v:[a] | 0 < len v} -> [a] @-}
 tail' :: [a] -> [a]
 tail' (_ : xs) = xs
 
+a = tail []
 x :: [Int]
 x = tail' (tail' [1, 2])
 
