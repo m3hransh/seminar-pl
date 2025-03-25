@@ -411,11 +411,14 @@ In this section, we will explain how to work with \texttt{LiquidHaskell}.
 \vspace{1em}
 
 With these dependencies, \texttt{LiquidHaskell} can check your program at compile time or through a code linter in your preferred IDE.  
+In the following sections, we explore various features of 
+\texttt{LiquidHaskell} and demonstrate how it can be used to 
+verify programs.
 
 
 \subsection{Type Refinement}
-As mentioned in Section \ref{sec:background}, refinement types are types that extend the expressiveness 
-of type system by providing predicates that can specify invariants of the program.
+As mentioned in Section \ref{sec:background}, refinement types extend the expressiveness 
+of the type system by providing predicates that specify program invariants.
 
 \texttt{LiquidHaskell} uses Logically Qualified Data Types (Liquid Types) \cite{rondonLiquidTypes2008}, 
 with some modifications to ensure soundness under lazy evaluation, to specify these refinements in 
@@ -451,7 +454,7 @@ The error message indicates that the inferred type of the variable \texttt{x} is
 required type. \texttt{LiquidHaskell} employs liquid typing rules—including the subtyping rule 
 discussed in Section \ref{sec:background}—to infer these types.
 
-Particularly, in \texttt{LiquidHaskell}, integers and other constants (e.g., booleans, character, etc.) are given a
+Particularly, in \texttt{LiquidHaskell}, integers and other constants (e.g., booleans, characters, etc.) are given a
 singleton type, meaning a type that has only one value \cite{niki_lecture_2024}. For instance, the liquid typing rule for integers is:
 
 \[
@@ -466,25 +469,26 @@ Combined with the following subtyping rule:
 
 \[
 \frac{
- \Gamma \vdash e: \tau_1  \quad \Gamma  \vdash \tau_1 \preceq \tau_2
+ \Gamma \vdash e: \tau_1  \quad \Gamma \vdash \tau_1 \preceq \tau_2
 }{
  \Gamma \vdash e: \tau_2 
 }
 \quad (\mathit{SUBTYPE})
 \]
 
-Refinement type checker, based on the \(\mathit{T-Int}\) rule, expects that expression \(-1\) should have type \(\{Int \mid v = -1\}\) 
-and then it should be a subtype of Nat type (assignment to variable of type Nat). 
+The refinement type checker, based on the \(\mathit{T-Int}\) rule, expects that the expression \(-1\) should have type \(\{Int \mid v = -1\}\) 
+and then be a subtype of the Nat type (i.e., when assigning a value to a variable of type Nat). 
 According to the translation of the subtyping query into verification conditions (see Figure \ref{eq:subtyping-vc}), 
 the type checker generates the following VC:
-\[ -1 = v \Rightarrow v \geq 0  \] 
-which in turn the SMT sovler finds unsatisfiable.
-
-
+\[
+-1 = v \Rightarrow v \geq 0
+\]
+which in turn the SMT solver finds unsatisfiable. In the following section,
+we demonstrate how to refine function types.
 
 \subsection{Function Types}
 
-Refinement types allow defining function preconditions and postconditions\cite{jhala_programming_2020}. 
+Refinement types allow defining function preconditions and postconditions \cite{jhala_programming_2020}. 
 For example, consider the following function:
 
 \begin{haskell}
@@ -494,11 +498,9 @@ For example, consider the following function:
 \end{haskell}
 
 The function defined above is a partial function because it does not handle the case when the list is empty. 
-Typical Haskell types allow the introduction of the \texttt{Maybe} type to loosen the output type or probably using more stronger type for input
-such as \texttt{NonEmpty} for making the function total.  
-The former approach, postpone handling to another part of the program \cite{jhala_programming_2020}, while the second approach
-needs the user introduce handling of empty list at some point earlier in the program.
-Using refinement types, we can define the type of tail function as follows:
+Typical Haskell types allow the introduction of the \texttt{Maybe} type to loosen the output type or using a stronger input type (e.g., \texttt{NonEmpty}) to make the function total.  
+The former approach postpones handling to another part of the program \cite{jhala_programming_2020}, while the latter requires the user to handle the empty list case earlier in the program.
+Using refinement types, we can define the type of the \texttt{tail} function as follows:
 
 \begin{haskell}
 {-@ tail :: {v:[a] | 0 < len v} -> [a] @-}
@@ -507,36 +509,31 @@ Using refinement types, we can define the type of tail function as follows:
 \end{haskell}
 
 This type definition specifies that the input list should have a length greater than zero.
-\texttt{len} is a special function that is defined in the refinement logic and returns the length of the list.
-In the Section \ref{sec:reflection}, we will show how to define and use user-defined functions in the refinement logic.
-\texttt{LiquidHaskell} will check this condition at compile time and issue an error if the condition is not met.
+\texttt{len} is a special function defined in the refinement logic that returns the length of the list.
+In Section \ref{sec:reflection}, we will show how to define and use user-defined functions in the refinement logic.
+\texttt{LiquidHaskell} will check this condition at compile time and issue an error if it is not met.
 Consider the following example:
 \begin{haskell}
 x = tail []
 \end{haskell}
-\texttt{LiquidHaskell} check that the type 
-\begin{equation*}
-  \{v : [a] \mid v == \text{GHC.Types.[ ]}\quad \&\& \text{ len } v == 0 \quad \&\&  \text{ len } v >= 0\}
-\end{equation*}
-is a subtype of the required type 
+\texttt{LiquidHaskell} checks that the type 
+\begin{haskell}
+{v : [a] | v == GHC.Types.[ ] && len v == 0 && len v >= 0}
+\end{haskell}
+is not a subtype of the required type 
 
-\begin{equation*}
-  \{v : [a] \mid  \text{ len } v > 0\}
-\end{equation*}
-and issue an error if the condition is not met. However, in some cases  
-like following the refinement checker can not verify the function call
-and give an error:
+\begin{haskell}
+{v : [a] | len v > 0}
+\end{haskell}
+and issues an error. However, in some cases, such as in the following, the refinement checker cannot verify the function call and gives an error:
 \begin{haskell}
  x :: [Int]
  x = tail (tail [1, 2])
 \end{haskell}
 
-When checking the function call, \texttt{LiquidHaskell} doesn't 
-look into the body of the function to see if the first application 
-of the \textit{tail} gives the valid non-empty list to the second \textit{tail}.
-To allow \texttt{LiquidHaskell} consider the above example as safe, 
-we need to also specify the post-condition for our function as following:
-
+When checking the function call, \texttt{LiquidHaskell} does not inspect the body of the function to verify that the first application 
+of \textit{tail} produces a non-empty list for the second \textit{tail}.
+To allow \texttt{LiquidHaskell} to consider the above example as safe, we need to also specify the postcondition for our function as follows:
 
 \begin{haskell}
  {-@ tail :: xs: {v:[a] | 0 < len v} -> {v:[a] | len v == len xs - 1} @-}
@@ -544,12 +541,14 @@ we need to also specify the post-condition for our function as following:
  tail (x:_) = x
 \end{haskell}
 
-This way, \texttt{LiquidHaskell} can reason about the output of the functions as well
-and gives more information to information to the type checker to work with.
-\subsection{Refined Data Types}
-In the above examples, we saw how refinements of input and output of function allow us to have stronger arguments about our program. 
-We can take this further by refining the data types. Consider the following example \cite{jhala_programming_2020}:
+This way, \texttt{LiquidHaskell} can reason about the output of the 
+function as well and provides additional information to the refinement type system.
 
+
+\subsection{Refined Data Types}
+In the previous examples, we saw how refinements of input and output of function allow us to have stronger arguments about our program. 
+We can take this further by refining the data types. 
+We use the following example as an illustration, following~\cite{jhala_programming_2020}:
 \begin{haskell}
   data Slist a = Slist { size :: Int, elems :: [a] }
 
@@ -557,11 +556,10 @@ We can take this further by refining the data types. Consider the following exam
 \end{haskell}
 
 This refined \textit{Slist} data type ensures the stored `size` always matches the length of the `elems` list, 
-as formalized in the refinement annotation \cite{jhala_programming_2020}. 
+as formalized in the refinement annotation. 
 This ensures that the size of the list is always correct.
 
-The only thing that is missing is the definition of \textit{len}. Fortunately, this function has already reflected by
-\texttt{LiquidHaskell}. In the following section, we show how can we use reflection or measure directives to define and execute any user-defined Haskell function in the refinement logic and
+In the following section, we show how can we use reflection or measure directives to define and execute any user-defined Haskell function in the refinement logic and
 reason about them.
 
 \subsection{Lifting Functions to the Refinement Logic}
@@ -584,8 +582,9 @@ bag Nil = B.empty
 bag (Cons x xs) = B.put x (bag xs)
 \end{haskell}
 
-This code adds the bag refinement type to the List data type. The \texttt{measure} directive is used to define the \texttt{bag} function,
-which is then copied to the refinement logic. It means that now the type of list constructors would have:
+This code adds the bag refinement type to the List data type. 
+The \texttt{measure} directive copies it to the logic,
+which is then copied to the refinement logic. We can now specify the following refinement types for the list constructors:
 
 \begin{haskell}
 Nil  :: {v:List a | bag v = B.empty}
@@ -593,7 +592,7 @@ Cons :: x:a -> l:List a -> {v:List a | bag v = B.put x (bag l)}
 \end{haskell}
 
 So then we can use the \texttt{bag} function in the refinement logic to reason about the program. 
-For instance, in the following example, we can use the \texttt{bag} function to reason about the program:
+For instance, in the following example:
 
 \begin{haskell}
 {-@ equalBagExample1 :: { bag(Cons 1 (Cons 3 Nil)) ==  bag( Cons 2 Nil) } @-}
@@ -604,7 +603,7 @@ For instance, in the following example, we can use the \texttt{bag} function to 
 >>      VV : {VV##2465 : () | bag (Cons 1 (Cons 3 Nil)) == bag (Cons 2 Nil)}
 \end{haskell}
 
-The $\{x = y\}$ is shorthand for $\{ v : () \mid x = y \}$, where $x$ and $y$ are expressions.
+The \texttt{\{x = y\}} is shorthand for \texttt{\{v :() | x = y\}}, where $x$ and $y$ are expressions.
 Note that equality for bags is defined as the equality of the underlying maps that already have a built-in equality function.
 \texttt{LiquidHaskell} can reason about the equality of bags by using the equality of the underlying maps and issuing a type error if the bags are not equal.
 If we define multiple measures for the same data type the refinements are conjoined together \cite{niki_lecture_2024}.
