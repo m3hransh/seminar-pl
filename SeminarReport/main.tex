@@ -433,6 +433,9 @@ The Liquid type annotations are provided by the programmer in the source file as
  {-@ type Nat = {v:Int | 0 <= v} @-}
 \end{haskell}
 
+A liquid type has the form \texttt{\{ v:T | e \}}, where \texttt{T} is a Haskell type and \texttt{e} is a boolean expression
+which may contain the v variable and free variables from the context \cite{vazou_refinement_2014}. This type represents all
+values \texttt{v} of type \texttt{T} that the expression \texttt{e} evaluates to true.
 If you configure your IDE to use the Haskell LSP, it will display the following error if you attempt to assign a negative 
 number to a variable of type \texttt{Nat}:
 
@@ -559,8 +562,7 @@ This refined \textit{Slist} data type ensures the stored `size` always matches t
 as formalized in the refinement annotation. 
 This ensures that the size of the list is always correct.
 
-In the following section, we show how can we use reflection or measure directives to define and execute any user-defined Haskell function in the refinement logic and
-reason about them.
+In the following section, we show how can we use reflection or measure directives to reason about user-defined Haskell function in the refinement logic.
 
 \subsection{Lifting Functions to the Refinement Logic}
 \label{sec:reflection}
