@@ -571,9 +571,8 @@ a function within another function. Refinement Reflection allows deep specificat
 reflecting the code implementing a Haskell function into the function’s output refinement type \cite{niki_blog_2016}.
 There are two ways to define and reason about a function in the refinement logic: \texttt{reflection} and \texttt{measure}. 
 
-\texttt{Measure} can be used on a function with one argument that is pattern-matched in the function body. Then,
-\texttt{LiquidHaskell} copies the function to the refinement logic, adds a refinement type to the constructor of the function's argument, and emits inferred global
-invariants related to the refinement \cite{niki_lecture_2024}. Consider the following example:
+\texttt{Measure} can be used on a function with one argument which is a Algebraic Data Type (ADT), like a list \cite{niki_lecture_2024}. 
+Consider the following example:
 
 \begin{haskell}
 data Bag a = Bag { toMap :: M.Map a Int } deriving Eq
@@ -584,18 +583,16 @@ bag Nil = B.empty
 bag (Cons x xs) = B.put x (bag xs)
 \end{haskell}
 
-This code adds the bag refinement type to the List data type. 
-The \texttt{measure} directive copies it to the logic,
-which is then copied to the refinement logic. We can now specify the following refinement types for the list constructors:
-
+\texttt{LiquidHaskell} lifts the Haskell function to the refinement logic, by refining the types of the data constructors with the
+definition of the function\cite{niki_lecture_2024}. 
+For example, \texttt{bag} measure definition refines the type of the \texttt{List}'s constructor to be:
 \begin{haskell}
 Nil  :: {v:List a | bag v = B.empty}
 Cons :: x:a -> l:List a -> {v:List a | bag v = B.put x (bag l)}
 \end{haskell}
 
-So then we can use the \texttt{bag} function in the refinement logic to reason about the program. 
-For instance, in the following example:
-
+Thus, we can use the \texttt{bag} function in the refinement logic to reason about 
+invariants of the \texttt{List} data type. For instance, in the following example:
 \begin{haskell}
 {-@ equalBagExample1 :: { bag(Cons 1 (Cons 3 Nil)) ==  bag( Cons 2 Nil) } @-}
 
@@ -606,10 +603,9 @@ For instance, in the following example:
 \end{haskell}
 
 The \texttt{\{x = y\}} is shorthand for \texttt{\{v :() | x = y\}}, where $x$ and $y$ are expressions.
+This formulation is motivated by the fact that the equality predicate $x = y$ is a condition that does not depend on any particular value.
 Note that equality for bags is defined as the equality of the underlying maps that already have a built-in equality function.
 \texttt{LiquidHaskell} can reason about the equality of bags by using the equality of the underlying maps and issuing a type error if the bags are not equal.
-If we define multiple measures for the same data type the refinements are conjoined together \cite{niki_lecture_2024}.
-
 
 
 Reflection is another useful feature that allows the user to define a function in the refinement logic, providing
