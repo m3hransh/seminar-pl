@@ -8,10 +8,19 @@ import Language.Haskell.Liquid.ProofCombinators
 {-@ infixr ++ @-}
 {-@ reflect ++ @-}
 
+{-@ reflect cons @-}
+{-@ cons :: a -> xs: [a] -> {v: [a] | len v == len xs + 1} @-}
+cons :: a -> [a] -> [a]
+cons x xs = x : xs
+
 {-@ (++) :: xs:[a] -> ys:[a] -> { zs:[a] | len zs == len xs + len ys } @-}
 (++) :: [a] -> [a] -> [a]
 [] ++ ys = ys
-(x : xs) ++ ys = x : (xs ++ ys)
+(x : xs) ++ ys = cons x (xs ++ ys)
+
+{-@ prop1:: {v: () | [1] ++ [1] == cons 1 []} @-}
+prop1 :: Proof
+prop1 = cons 1 ([] ++ [1]) === [1] *** QED
 
 {-@ rightId :: xs: [a] -> { v: () | xs ++ [] = xs } @-}
 rightId :: [a] -> ()
