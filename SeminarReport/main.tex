@@ -61,8 +61,6 @@
   tabsize=3,
   basicstyle={\fontfamily{tx}\ttfamily\small},
   stringstyle=\color{green_ulises},
-  commentstyle=\color{black!80}
-  identifierstyle=\slshape{},
   keywordstyle=\bfseries,
   numberstyle=\small\color{pink},
   backgroundcolor=\color{gray!5},
@@ -337,8 +335,9 @@ When we run code fragment written in \texttt{SMT-LIB2}, Z3 responds:
 
 
 When calling \texttt{solver.check()}, the solver determines that the assertions are satisfiable
-(sat)—meaning there is a way to assign values to the \(Tie\) and \(Shirt\) that make all the 
-conditions true. One possible solution is \(Tie = false\) and \(Shirt = true\), which can be retrieved using \texttt{solver.model()}.
+(sat)--meaning there is a way to assign values to the \(Tie\) and \(Shirt\) that make all the 
+conditions true. One possible solution is \(Tie = false\) and \(Shirt = true\), 
+which can be retrieved using \texttt{solver.model()}.
 \vspace{1em}
 
 
@@ -605,7 +604,6 @@ invariants of the \texttt{List} data type. For instance, in the following exampl
 The \texttt{\{x = y\}} is shorthand for \texttt{\{v :() | x = y\}}, where $x$ and $y$ are expressions.
 This formulation is motivated by the fact that the equality predicate $x = y$ is a condition that does not depend on any particular value.
 Note that equality for bags is defined as the equality of the underlying maps that already have a built-in equality function.
-\texttt{LiquidHaskell} can reason about the equality of bags by using the equality of the underlying maps and issuing a type error if the bags are not equal.
 
 
 Reflection is another useful feature that allows the user to define a function in the refinement logic, providing
@@ -615,11 +613,12 @@ is no more automated \cite{niki_lecture_2024}.
 Additionally, with the use of a library of combinators provided by \texttt{LiquidHaskell}, we can leverage 
 the existing programming constructs (e.g. pattern-matching and recursion) to prove the correctness of the 
 program and use the principle of programs-as-proofs. 
-(known as Curry-Howard isomorphism)\cite{vazou_refinement_2018}\cite{wadler_propositions_2015}.
+(known as Curry-Howard isomorphism)\cite{vazou_refinement_2018, wadler_propositions_2015}.
 
 To illustrate the use of reflection, we define the \texttt{(++)} function in the refinement logic as follows:
 
 \begin{haskell}
+{-@ LIQUID "--reflection" @-}
 {-@ infixr ++ @-}
 {-@ reflect ++ @-}
 
@@ -628,7 +627,7 @@ To illustrate the use of reflection, we define the \texttt{(++)} function in the
 [] ++ ys = ys
 (x : xs) ++ ys = x : (xs ++ ys)
 \end{haskell}
-
+The \texttt{\{-@ LIQUID "--reflection" @-\}} annotation used to activate the reflection feature in \texttt{LiquidHaskell}.
 The \texttt{reflect} annotation, lift the \texttt{(++)} into the logic in three steps \cite{vazou_refinement_2018}:
 \begin{enumerate}
   \item \textbf{Definition}: The annotation creates an \textit{uninterpreted function} \texttt{
@@ -653,17 +652,42 @@ where \texttt{ppProp} is an alias for the following refinement, derived from the
   in the code automatically unfolds the definition of \texttt{(++)} only \textit{once} in the logic. In the
   next section, we will look into \texttt{PLE} that allows to unfold the definition of the function multiple times.
 \end{enumerate}
-we can now reason about properties of \texttt{(++)} in the refinement logic that require unfolding its definition, as opposed to treating it only as an uninterpreted function.
+we can now reason about properties of \texttt{(++)} in the refinement logic that requires unfolding its definition, as opposed to treating it only as an uninterpreted function.
 In the following subsection, we will show how to use \texttt{LiquidHaskell} to verify that the \texttt{(++)} function is associative.
 
-\subsection{Verification}
+\subsection{Equational Proofs}
 \texttt{LiquidHaskell} allows formulation of proofs following the style of calculational or equational reasoning popularized in classic texts
 and implemented in proof assistants like Coq and Agda \cite{vazou_refinement_2018}.
-In the following example, we show how to use these combinators to verify that the \texttt{++} function is associative:
+It comes with the proof combinators library that allows to make the proofs more readable.
+For example, it defines the following proof combinators:
 
 \begin{haskell}
+  type Proof = ()
+
+  {-@ (===) :: x:a -> y:{a | y == x} -> {v:a | v == x && v == y} @-}
+  (===) :: a -> a -> a
+  _ === y  = y
+
+  data QED = QED
+
+  (***) :: a -> QED -> Proof
+  _***_ = ()
+
+  (?) :: a -> b -> a
+  x ? _ = x
+\end{haskell}
+\texttt{Proof} is a type alias for the unit type, and \texttt{(***)} is a function that takes a value of type \texttt{a} and a value of type \texttt{QED} and returns a value of type \texttt{()}. 
+The \texttt{(***)} function is used to mark the end of a proof. 
+The \texttt{(?)} function is the \textit{because} combinator that even though it ignores its second argument, 
+it is used to add a fact in the proof . 
+The \texttt{===} function is used to prove that two values are equal.
+
+In the following example, we show how to use these combinators to verify that the \texttt{(++)} function is associative:
+
+
+\begin{lstlisting}[language=haskell, label={lst:associative}]
 {-@ assoc :: xs:[a] -> ys:[a] -> zs:[a] 
-  -> { v: () | (xs ++ ys) ++ zs = xs ++ (ys ++ zs) } @-}
+  -> { (xs ++ ys) ++ zs = xs ++ (ys ++ zs) } @-}
 assoc :: [a] -> [a] -> [a] -> ()
 assoc [] ys zs = ([] ++ ys) ++ zs
                === ys ++ zs
@@ -675,21 +699,41 @@ assoc (x : xs) ys zs = ((x : xs) ++ ys) ++ zs
                      === x : ((xs ++ ys) ++ zs) ? assoc xs ys zs
                      === (x : xs) ++ (ys ++ zs)
                      *** QED
-\end{haskell}
+\end{lstlisting}
 
-These combinators are defined as follows:
+As you can see, we use proof by induction and in the induction step we use recursive call in the last step.
+\subsection{Termination}
+One important aspect to note is that \texttt{LiquidHaskell} requires every function to terminate by default. 
+To ensure this, it employs three mechanisms \cite{niki_lecture_2024}:  
+\begin{enumerate}
+  \item \textit{Structural Termination}: \texttt{LiquidHaskell} verifies that recursive calls in functions operating on data types are made with a smaller part of the input. 
+    If this verification fails, either due to the function not being defined on a data type or the recursive calls not being on a subpart, then \texttt{LiquidHaskell} offers two following alternative methods to ensure termination.
+  \item \textit{Terrmination Heuristic}: The first argument that can be "sized"-- there is measure function that turned into \texttt{Nat}--
+    should be decreasing and non negative in recursive calls.
+  \item \textit{Termination Metrics}: user provide, integer expressions tha can depend on the function arguments and are used to check termination.
+\end{enumerate}
+In code \ref{lst:associative}, the \texttt{assoc} function is terminating because the recursive call is made on the tail of the list, which is a subpart of the input list.
+
+\subsection{Proof by Logical Evaluation}
+In our proof in code \ref{lst:associative}, for the most parts we used trivial unfolding of \texttt{(++)} function definition.
+However, \texttt{LiquidHaskell} offer a tactic called \texttt{Proof by Logical Evaluation} (PLE) 
+that provides two key features \cite{vazou_refinement_2018}. First, it is guaranteed to find an equational proof if one can be constructed
+from unfoldings of function definitions (The user must still provide lemmas and induction hypotheses) \cite{vazou_refinement_2018}.
+We can activate PLE by adding \texttt{\{-@ LIQUID "---ple" @-\}} annotation to automate the most parts of the proof for associativity of \texttt{(++)}:
+
 \begin{haskell}
-  (===) :: x: a -> y: { a | x = y }  -> { v: a | v = x }
-  data QED = QED
-  (***) :: a -> QED -> ()
+{-@ LIQUID "--ple" @-}
+{-@ assoc :: xs:[a] -> ys:[a] -> zs:[a] 
+  -> { (xs ++ ys) ++ zs = xs ++ (ys ++ zs) } @-}
+assoc :: [a] -> [a] -> [a] -> ()
+assoc [] ys zs = ()
+assoc (x : xs) ys zs = assoc xs ys zs
 \end{haskell}
 
-As you can see, some of the steps in the proof seem trivial if we are able to unfold the definition of the \texttt{++} function.
-For this purpose, \texttt{LiquidHaskell} provides \texttt{Proof by Logical Evaluation} (PLE) which allows us to unfold the definition of the function.
-The key idea in PLE is to mimic type-level computation within SMT-logics by representing the function in a guarded form and repeatedly unfolding function
-application terms by instantiating them with their definition corresponds to an enabled guard \cite{vazou_refinement_2018}.
-
-\section{Example Application}
+In the above code, we only need to provide the base case and induction hypotheses, and 
+\texttt{LiquidHaskell} will automatically unfold the definition of \texttt{(++)} to prove the associativity of the function.
+In the next section, we go through an example application of \texttt{LiquidHaskell}.
+\section{Example Application}. 
 \label{sec:example}
 
 In this section, we discuss the insertion sort algorithm and how to verify its functional correctness using \texttt{LiquidHaskell}.  

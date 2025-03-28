@@ -1,6 +1,8 @@
 module Demo.Proof where
 
 {-@ LIQUID "--reflection"     @-}
+
+{-@ LIQUID "--ple"     @-}
 import Prelude hiding (reverse, (++))
 
 import Language.Haskell.Liquid.ProofCombinators
@@ -16,11 +18,7 @@ cons x xs = x : xs
 {-@ (++) :: xs:[a] -> ys:[a] -> { zs:[a] | len zs == len xs + len ys } @-}
 (++) :: [a] -> [a] -> [a]
 [] ++ ys = ys
-(x : xs) ++ ys = cons x (xs ++ ys)
-
-{-@ prop1:: {v: () | [1] ++ [1] == cons 1 []} @-}
-prop1 :: Proof
-prop1 = cons 1 ([] ++ [1]) === [1] *** QED
+(x : xs) ++ ys = x : (xs ++ ys)
 
 {-@ rightId :: xs: [a] -> { v: () | xs ++ [] = xs } @-}
 rightId :: [a] -> ()
@@ -29,27 +27,8 @@ rightId (x : xs) = (x : xs) ++ [] === x : (xs ++ []) ? rightId xs === x : xs ***
 
 {-@ assoc :: xs:[a] -> ys:[a] -> zs:[a] -> { v: () | (xs ++ ys) ++ zs = xs ++ (ys ++ zs) } @-}
 assoc :: [a] -> [a] -> [a] -> ()
-assoc [] ys zs =
-  ([] ++ ys)
-    ++ zs
-    === ys
-    ++ zs
-    === []
-    ++ (ys ++ zs)
-    *** QED
-assoc (x : xs) ys zs =
-  ((x : xs) ++ ys)
-    ++ zs
-    === ( x
-            : (xs ++ ys)
-        )
-    ++ zs
-    === x
-    : ((xs ++ ys) ++ zs)
-      ? assoc xs ys zs
-      === (x : xs)
-      ++ (ys ++ zs)
-      *** QED
+assoc [] ys zs = ()
+assoc (x : xs) ys zs = assoc xs ys zs
 
 -- {-@ rightId' :: xs: [a] -> { v: () | xs ++ [] = xs } @-}
 -- rightId' :: [a] -> ()
